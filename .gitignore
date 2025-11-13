@@ -1,10 +1,80 @@
+# ──────────────────────────────
+# PYTHON CACHE
+# ──────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
-*.exe
-*.dll
-*.docx
-*.pdb
-*.rdb
+*.pyd
+
+# ──────────────────────────────
+# VIRTUAL ENV
+# ──────────────────────────────
+.venv/
+env/
+venv/
+
+# ──────────────────────────────
+# DJANGO FILES
+# ──────────────────────────────
+db.sqlite3
+*.log
+*.pot
+*.mo
+*.pyc
+
+# Ignore staticfiles coletados
+/staticfiles/
+/static/
+
+# Ignore media uploads
+/media/
+
+# ──────────────────────────────
+# ENVIRONMENT VARIABLES
+# ──────────────────────────────
+.env
+*.env
+
+# ──────────────────────────────
+# LOCAL CONFIG
+# ──────────────────────────────
+settings_local.py
+local_settings.py
+
+# ──────────────────────────────
+# JSON / PARQUET / TEMP DATA
+# (resultado das análises)
+# ──────────────────────────────
+*.parquet
+*.json
+*.csv
+
+# ──────────────────────────────
+# REDIS / TKINTER / LIBS LOCAIS
+# ──────────────────────────────
 Redis-x64-3.0.504/
 get-pip.py
+
+# ──────────────────────────────
+# LOGS DO PROJETO
+# ──────────────────────────────
+logs/
+*.log
+/logs/*
+
+# ──────────────────────────────
+# DOCKER
+# ──────────────────────────────
+*.tar
+docker-compose.override.yml
+
+# ──────────────────────────────
+# N8N (não commitamos nada disso)
+# ──────────────────────────────
+.n8n/
+
+# ──────────────────────────────
+# EDITORES
+# ──────────────────────────────
+.vscode/
+.idea/
