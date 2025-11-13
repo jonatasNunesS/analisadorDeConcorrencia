@@ -32,7 +32,7 @@ def salvar_loja(request):
             lojas = Loja.objects.filter(url=url)
             loja = lojas.first()
             quantProduto = Produto.objects.filter(loja_id=loja.id).count() if loja else 0
-            if not lojas.exists() or quantProduto == 0 :
+            if loja is None or quantProduto == 0:
                 nova_loja = Loja(nome=nome, url=url)
                 nova_loja.save() 
                 print(f"Loja recebida: {nome} - {url}")
@@ -43,12 +43,14 @@ def salvar_loja(request):
                     precoBruto = produto.get('preco')
                     preco_prod = limpar_preco(precoBruto)
                     imagem_prod = produto.get('imagem') 
+                    url_prod = produto.get('url')
                     if not Produto.objects.filter(nome=nome_prod).exists():
                         Produto.objects.create(
                             nome=nome_prod,
                             preco=preco_prod,   
                             imagem=imagem_prod,
-                            loja_id=nova_loja.id
+                            loja_id=nova_loja.id,
+                            url=url_prod
                         )
                         print(f"{nome_prod} - {preco_prod} - {imagem_prod}\n")
                 return JsonResponse({'mensagem': 'Loja salva no DB com sucesso!'})

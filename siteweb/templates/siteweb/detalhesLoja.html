@@ -88,6 +88,7 @@
                         data-nomeProduto="{{produto.nome}}"
                         data-precoProduto="{{produto.preco}}"
                         data-imagemProduto="{{produto.imagem}}"
+                        data-urlProduto="{{produto.url}}"
                     >
                     <img src="{{produto.imagem}}" alt="" class="imgProduto">
                     <h2 class="titleProduto">{{produto.nome}}</h2>
@@ -107,7 +108,7 @@
             .map(checkbox =>({
                 nome: checkbox.dataset.nomeproduto,
                 preco: checkbox.dataset.precoproduto.replace("R$", "").replace(/\s/g, "").replace(",", "."),
-                imagem: checkbox.dataset.imagemproduto
+                imagem: checkbox.dataset.imagemproduto,
             }));
             console.log(checkedBoxes)
 
@@ -182,7 +183,8 @@
             .map(dados =>({
                 nome: dados.dataset.nomeproduto,
                 preco: dados.dataset.precoproduto,
-                imagem: dados.dataset.imagemproduto
+                imagem: dados.dataset.imagemproduto,
+                url: dados.dataset.urlproduto
             }));
             console.log(`Passando ${produtosLoja.length} produtos`)
             console.log("Loja: "+ nomeLoja +"| Url: "+ urlLoja);

@@ -24,7 +24,8 @@ def executar_raspagem(nomeLoja, urlLoja):
             print("Loja encontrada.")
             produtos = Produto.objects.filter(loja_id = loja.id).all()
 
-            if isinstance(produtos, models.QuerySet) and not produtos.exists():
+            if not produtos.exists():
+                print("[INFO] Produtos não encontrados no DB, iniciando raspagem.")
                 with sync_playwright() as playwright:
                     produtos = raspar_dados(playwright, urlLoja)
                     produto_list = [
@@ -49,6 +50,7 @@ def executar_raspagem(nomeLoja, urlLoja):
                         }
                         for p in produtos
                     ]   
+                    print("Salvando produtos no cache ", produto_list)
                     salvar_cache(chave_cache, json.dumps(produto_list))
                 
             else:
