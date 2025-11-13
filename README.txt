@@ -9,7 +9,7 @@ cd Redis-x64-3.0.504
 redis-cli.exe -h 127.0.0.1 -p 6379 ping
 .\redis-cli.exe
 
-//-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --//
+//-- -- -- -- -- -- -- -- -- -- -- -- -- -- --//
 
 /*Inicia o ollama, model: gemma:2b*/
 ollama run mistral
