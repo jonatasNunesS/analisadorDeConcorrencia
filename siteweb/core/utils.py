@@ -32,28 +32,32 @@ def salvar_loja(request):
             lojas = Loja.objects.filter(url=url)
             loja = lojas.first()
             quantProduto = Produto.objects.filter(loja_id=loja.id).count() if loja else 0
-            if loja is None or quantProduto == 0:
+            if loja is None:
                 nova_loja = Loja(nome=nome, url=url)
                 nova_loja.save() 
                 print(f"Loja recebida: {nome} - {url}")
-                print(f"\nProdutos Recebidos:\n")
-                for produto in produtosLoja:
-                    nome_prod = produto.get('nome')
-                    print(nome_prod)
-                    precoBruto = produto.get('preco')
-                    preco_prod = limpar_preco(precoBruto)
-                    imagem_prod = produto.get('imagem') 
-                    url_prod = produto.get('url')
-                    if not Produto.objects.filter(nome=nome_prod).exists():
-                        Produto.objects.create(
-                            nome=nome_prod,
-                            preco=preco_prod,   
-                            imagem=imagem_prod,
-                            loja_id=nova_loja.id,
-                            url=url_prod
-                        )
-                        print(f"{nome_prod} - {preco_prod} - {imagem_prod}\n")
-                return JsonResponse({'mensagem': 'Loja salva no DB com sucesso!'})
+                produtos = Produto.objects.filter(loja_id = nova_loja.id).all()
+                if not produtos.exists():
+                    for produto in produtosLoja:
+                        nome_prod = produto.get('nome')
+                        print(nome_prod)
+                        precoBruto = produto.get('preco')
+                        preco_prod = limpar_preco(precoBruto)
+                        imagem_prod = produto.get('imagem') 
+                        url_prod = produto.get('url')
+                        if not Produto.objects.filter(nome=nome_prod, loja_id=nova_loja.id).exists():
+                            Produto.objects.create(
+                                nome=nome_prod,
+                                preco=preco_prod,   
+                                imagem=imagem_prod,
+                                loja_id=nova_loja.id,
+                                url=url_prod
+                            )
+                            print(f"{nome_prod} - {preco_prod} - {imagem_prod}\n")
+                    print(f"\nProdutos Recebidos:\n")
+                    return JsonResponse({'mensagem': 'Loja salva no DB com sucesso!'})
+                else:
+                    return JsonResponse({'mensagem': 'Essa loja ja tem produtos!'})          
             else:
                 print("Loja ja existente.")
                 return JsonResponse({'mensagem': 'Loja já existente.'})

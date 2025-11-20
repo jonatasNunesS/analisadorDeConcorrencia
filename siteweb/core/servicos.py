@@ -4,6 +4,8 @@ from siteweb.core.raspagem import raspar_dados
 from utils.cache import salvar_cache, ler_cache
 from siteweb.core.utils import limpar_preco
 from django.db import models
+from django.conf import settings
+from datetime import datetime
 import json
 import pandas as pd
 import numpy as np
@@ -13,7 +15,43 @@ def executar_raspagem(nomeLoja, urlLoja):
     print("// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //")
     print("INICIO RASPAGEM")
     chave_cache = f"loja:{nomeLoja}"
-    #produtos = 
+    loja = Loja.objects.filter(url=urlLoja)
+    if loja.exists():
+        print("Loja já existe no banco de dados.")
+        
+"""
+         with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=False)
+            USER_AGENTS = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/537.36",
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/116 Safari/537.36"
+            ]
+            viewport={"width": 1280, "height": 800}
+            context = browser.new_context(
+                user_agent=random.choice(USER_AGENTS),
+                viewport={"width":1280,"height":800}
+            )
+            page = context.new_page()
+            print("[INFO] Acessando página...")
+            page.goto(urlLoja, timeout=50000)
+            time.sleep(2)
+            page.mouse.wheel(0, 1000)
+            time.sleep(1)
+            if "algo deu errado" in page.content():
+                print("[ERRO] Página de erro detectada. Abortando raspagem.")
+                browser.close()
+                return []
+
+            selected_text = page.evaluate("""
+                () => {
+                    const selectElement = document.querySelector('select');
+                    return selectElement.options[selectElement.selectedIndex].text;
+                }
+            """)
+            print(f"[INFO] Loja selecionada: {selected_text}")
+            browser.close()
+"""
     produtos_json = ler_cache(chave_cache)
     produtos = json.loads(produtos_json) if produtos_json else []
     produtos = list(produtos)
@@ -119,5 +157,8 @@ def rankeador(resultados_sim):
     else:
         texto = "O produto principal já está entre os três primeiros, sem necessidade de ajuste de preço."
     print("Principal para rankeamento:", lista)
+    lista_df = pd.DataFrame(lista)
+    destino = f"{settings.MEDIA_ROOT}/classificacaoPrecoExcel/Rankeamento-{datetime.now().strftime('%d-%m-%Y_%H%M')}.xlsx"
+    lista_df.to_excel(destino, index=False)
     return lista, texto
 

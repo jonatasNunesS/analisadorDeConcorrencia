@@ -5,7 +5,7 @@ from django.conf import settings
 from datetime import datetime
 import requests
 
-modeloIa = "groq"
+modeloIa = "ollama"
 
 if modeloIa == "ollama":
     ollama_url = "http://localhost:11434/api/generate"
@@ -178,15 +178,15 @@ def processar_parquet(origem_path, destino_path,nivelCompat):
     print("\n\n✅ Novo parquet salvo em:", destino_path)
 
 
-    destino_nao = destino_path.replace("analiseIa-", "analiseIa_naoCompat-")
+    destino_nao = destino_path.replace("concorrentesCompativeis/analiseIa-", "concorrentesNaoCompativeis/analiseIa_naoCompat-")
     df_nao.to_parquet(destino_nao, index=False)
     print("\n⚠️ Parquet com incompatibilidades salvo em:", destino_nao)
     
     return destino_nao, destino_path, resultados_sim
 
 def comparacaoIa(arquivo, nivelCompat):
-    origem = settings.MEDIA_ROOT + "/" + arquivo
-    destino = f"{settings.MEDIA_ROOT}/analiseIa-{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
+    origem = f"{settings.MEDIA_ROOT}/concorrentesRaspagem/{arquivo}"
+    destino = f"{settings.MEDIA_ROOT}/concorrentesCompativeis/analiseIa-{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
     destinos = processar_parquet(origem, destino, nivelCompat)
     return destinos
     

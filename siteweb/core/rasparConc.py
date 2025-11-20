@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from datetime import datetime
+from django.conf import settings
 
 def raspagem_concorrentes(produtos, numPage):
     raspagem = []
@@ -79,8 +80,9 @@ def raspagem_concorrentes(produtos, numPage):
     df = pd.DataFrame(linhas)
     df = df.astype(str)
     os.makedirs("media", exist_ok=True)
-    nome_arquivo = f"comparacao_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
-    caminho = os.path.join("media", nome_arquivo)
+    nome_arquivo = f"comparacao-{datetime.now().strftime('%d-%m-%Y_%H%M')}.parquet"
+    #caminho = os.path.join("media/concorrentesRaspagem", nome_arquivo)
+    caminho = f"{settings.MEDIA_ROOT}/concorrentesRaspagem/{nome_arquivo}"
     df.to_parquet(caminho, index=False, engine="pyarrow")
 
     return raspagem, nome_arquivo
