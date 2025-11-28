@@ -1,0 +1,46 @@
+.formLogin{
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    background-color: #f3e4e4;
+    padding: 30px 8px;
+    border-radius: 5px;
+    margin: auto;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+}
+.formLogin legend{
+    font: normal 700 1.5em var(--fontPrimaria);
+    padding-bottom: 5px;
+    font-variant: small-caps;
+}
+.formLogin fieldset{
+    border: none;
+}
+.formLogin label{
+    font: normal 600 1em var(--fontPrimaria);
+}
+.formLogin input{
+    margin: 10px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.formLogin .button_login{
+    font: normal 700 1em var(--fontPrimaria);
+    padding: 5px 10px;
+    width: 100px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+}
+.formLogin button:hover{
+    background-color: #45a049;
+}
+

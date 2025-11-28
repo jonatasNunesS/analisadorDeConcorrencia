@@ -33,16 +33,13 @@
 .dadosLoja{
     display: flex;
     align-items: center;
+    flex-direction: column;
     padding: 30px 18px;
     border: 2px solid rgba(0, 0, 0, 0.117);
     background-color: var(--corPrimaria);
 }
 .dadosLoja .dads1Loja{
-    width: 50%;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-direction: column;
+    
 }
 .dadosLoja .dads1Loja span{
     border: 0.2px solid rgba(0, 0, 0, 0.059);
@@ -58,13 +55,12 @@
 .dadosLoja .dads1Loja .linkLoja{
     font: normal 300 0.8em var(--fontPrimaria);
     color: rgba(0, 0, 0, 0.742);
-    width: 40vw;
     height: 60px;
 }
 .dadosLoja .dads2Loja{
     display: flex;
+    flex-direction: column;
     justify-content: center;
-    width: 50%;
 }
 .containButton{
   display: flex;
@@ -78,14 +74,13 @@
   font-variant: small-caps;
   border-radius: 6px;
   border: none;
-  width: 250px;
+  width: 200px;
 }
 .btnRecarregar, .btnCompProd{
   padding: 8px;
   font: normal 600 0.8em var(--fontPrimaria);
   border-radius: 6px;
   border: none;
-  width: 250px;
 }
 .btnSalvar:hover,.btnRecarregar:hover{
   transform: translateY(-2px);
@@ -103,7 +98,6 @@
 /*Barra de pesquisa*/
 .search-container {
       width: 100%;
-      max-width: 300px;
       padding: 0 10px;
     }
     .search-box {
@@ -157,11 +151,15 @@
 }
 .containProdutosLoja{
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    grid-template-columns: repeat(1, 300px);
+    gap: 12px;
+    padding: 20px 0px;
 }
 .titleComparar{
-  font: normal 600 1.5em var(--fontPrimaria);
+  font: normal 600 1.1em var(--fontPrimaria);
+  text-align: center;
   color: rgba(0, 0, 0, 0.733);
   padding-bottom: 10px;
 }
@@ -174,12 +172,25 @@
 .btnCompProd:hover{
   transform: scale(1.03);
 }
+
+.containPagesRaspagem{
+  box-shadow: 1px 5px 10px #0000001e;
+  background-color: var(--corPrimaria);
+  border: 1px solid rgba(26, 26, 26, 0.185);
+  font: normal 600 0.9em var(--fontPrimaria);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.containPagesRaspagem input{
+  font: normal 400 0.9em var(--fontPrimaria);
+  padding: 2px;
+}
 /*Card produto*/
 .cardProduto{
   position: relative;
     display: flex;
     flex-direction: column;
-    width: 220px;
+    width: 100%;
     border: 1px solid #cbcbcb;
     box-shadow: 1px 3px 10px rgba(0, 0, 0, 0.081);
     border-radius: 20px;
@@ -207,7 +218,19 @@
     padding: 10px 0px;
     bottom: 0px; 
 }
-
+.linkCardProduto{
+  display: inline-block;
+  text-align: center;
+  font: normal 600 0.9em var(--fontPrimaria);
+  padding: 6px 10px;
+  background-color: var(--corPrimaria);
+  border: 1px solid rgba(26, 26, 26, 0.185);
+  border-radius: 6px;
+  bottom: 0px;
+}
+.linkCardProduto:hover{
+  transform: translateY(-2px);
+}
 .divCompararProd{
   display: flex;
   align-items: center;

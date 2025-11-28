@@ -1,129 +1,666 @@
-{% load static %}
-{% load meus_filtros %}
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-
-    <!--Estilos-->
-    <link rel="stylesheet" href="{% static 'css/global.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'css/header.css' %}">
-    <link rel="stylesheet" href="{% static 'css/comparador.css' %}">
-</head>
-<body>
-    
-    {% include 'componentes/header.html' %}
-    <button onclick="abrirModal()">Abrir Modal</button>
-
-<!-- Estrutura do modal -->
-<div id="meuModal" class="modal">
-  <div class="modal-conteudo">
-    <div class="topoModal">
-        <div id="conteudoExplicacao" class="conteudoExplicacao">
-
+<!DOCTYPE html><html lang="pt-BR" class="h-full"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Tracker Pro</title>
+  <script src="../../static/js/element_sdk.js"></script>
+  <script src="../../static/js/data_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+        }
+        
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes bounce-in {
+            0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(60px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes countUp {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .float-animation { animation: float 6s ease-in-out infinite; }
+        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+        .slide-in { animation: slide-in 0.8s ease-out forwards; }
+        .bounce-in { animation: bounce-in 0.6s ease-out forwards; }
+        .fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+        .scale-in { animation: scaleIn 0.6s ease-out forwards; }
+        
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        .parallax-element {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+        
+        .table-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        .table-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        }
+        
+        .ranking-badge {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #1a1a1a;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .ranking-badge.gold { background: linear-gradient(135deg, #ffd700, #ffed4e); }
+        .ranking-badge.silver { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); }
+        .ranking-badge.bronze { background: linear-gradient(135deg, #cd7f32, #daa520); }
+        .ranking-badge.default { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+        
+        .modal-enter {
+            animation: scaleIn 0.3s ease-out forwards;
+        }
+        
+        .counter {
+            animation: countUp 0.8s ease-out forwards;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .neon-border {
+            border: 2px solid transparent;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4) border-box;
+            border-radius: 12px;
+        }
+        
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+    </style>
+  <!--<style>@view-transition { navigation: auto; }</style>-->
+ </head>
+ <body class="h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white overflow-x-hidden">
+  <main class="min-h-full"><!-- Página Inicial -->
+   <div id="homePage" class="min-h-full flex flex-col"><!-- Header com animação -->
+   </div><!-- Página de Resultados -->
+   <div id="resultsPage" class="min-h-full hidden"><!-- Header da página de resultados -->
+    <header class="bg-gradient-to-r from-purple-800/50 to-blue-800/50 backdrop-blur-sm border-b border-white/10 sticky top-0 z-40">
+     <div class="container mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+       <div class="flex items-center space-x-3"><button id="backBtn" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+         </svg></button>
+        <h1 class="text-xl font-bold gradient-text">Análise de Concorrentes</h1>
+       </div>
+       <div class="text-sm text-gray-300" id="analysisDate"></div>
+      </div>
+     </div>
+    </header><!-- Conteúdo dos resultados com parallax -->
+    <div class="relative"><!-- Background parallax elements -->
+     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div class="parallax-bg absolute w-full h-full opacity-10">
+       <div class="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-xl float-animation"></div>
+       <div class="absolute top-40 right-20 w-24 h-24 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full blur-xl float-animation" style="animation-delay: 2s;"></div>
+       <div class="absolute bottom-40 left-1/4 w-40 h-40 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full blur-xl float-animation" style="animation-delay: 4s;"></div>
+      </div>
+     </div>
+     <div class="relative z-10 container mx-auto px-6 py-8"><!-- Info da loja com parallax -->
+      <div class="parallax-element glass-effect rounded-2xl p-8 mb-12 hover-lift" data-speed="0.5">
+       <div class="flex items-center space-x-4 mb-6">
+        <div class="w-20 h-20 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl flex items-center justify-center pulse-glow">
+         <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"></path>
+         </svg>
         </div>
-        <span class="fechar" onclick="fecharModal()">&times;</span>
+        <div>
+         <h2 id="storeNameResult" class="text-4xl font-bold gradient-text mb-2"></h2>
+         <p id="storeUrlResult" class="text-gray-300 break-all text-lg"></p>
+        </div>
+       </div><!-- Métricas principais com animação -->
+       <div class="grid md:grid-cols-4 gap-6">
+        <div class="text-center p-6 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl hover-lift">
+         <div class="text-4xl font-bold text-green-400 counter" id="productCount" data-target="0">
+          0
+         </div>
+         <div class="text-sm text-gray-300 mt-2">
+          Produtos Analisados
+         </div>
+        </div>
+        <div class="text-center p-6 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl hover-lift">
+         <div class="text-4xl font-bold text-blue-400" id="avgPrice">
+          R$ 0
+         </div>
+         <div class="text-sm text-gray-300 mt-2">
+          Preço Médio
+         </div>
+        </div>
+        <div class="text-center p-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl hover-lift">
+         <div class="text-4xl font-bold text-purple-400 counter" id="categoryCount" data-target="0">
+          0
+         </div>
+         <div class="text-sm text-gray-300 mt-2">
+          Concorrentes
+         </div>
+        </div>
+        <div class="text-center p-6 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl hover-lift">
+         <div class="text-4xl font-bold text-orange-400" id="analysisScore">
+          95%
+         </div>
+         <div class="text-sm text-gray-300 mt-2">
+          Score IA
+         </div>
+        </div>
+       </div>
+      </div><!-- Seção de análise de concorrentes -->
+      <div class="parallax-element mb-8" data-speed="0.3">
+       <h3 class="text-3xl font-bold gradient-text mb-6 text-center">🎯 Análise Competitiva por Produto</h3>
+       <p class="text-gray-300 text-center mb-8 text-lg">Clique em qualquer tabela para ver detalhes completos dos concorrentes</p>
+      </div><!-- Grid de tabelas de produtos -->
+      <div id="competitorTables" class="grid lg:grid-cols-2 gap-8"><!-- Tabelas serão inseridas aqui dinamicamente -->
+      </div>
+     </div>
     </div>
-    <table id="tabelaRanking" class="tabelaRanking">
+   </div><!-- Modal para detalhes da tabela -->
+   <div id="tableModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="glass-effect rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"><!-- Header do modal -->
+     <div class="flex items-center justify-between p-6 border-b border-white/10">
+      <div>
+       <h3 id="modalProductName" class="text-2xl font-bold gradient-text"></h3>
+       <p id="modalProductCategory" class="text-gray-300"></p>
+      </div><button id="closeModal" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+       </svg></button>
+     </div><!-- Conteúdo do modal -->
+     <div class="p-6 overflow-y-auto max-h-[70vh]">
+      <div class="overflow-x-auto">
+       <table class="w-full">
         <thead>
-            <th>n°</th>
-            <th>Loja</th>
-            <th>nome</th>
-            <th>preço</th>
+         <tr class="border-b border-white/10">
+          <th class="text-left py-4 px-4 text-gray-300 font-semibold">Ranking</th>
+          <th class="text-left py-4 px-4 text-gray-300 font-semibold">Produto</th>
+          <th class="text-left py-4 px-4 text-gray-300 font-semibold">Preço</th>
+          <th class="text-left py-4 px-4 text-gray-300 font-semibold">Loja</th>
+          <th class="text-left py-4 px-4 text-gray-300 font-semibold">Avaliação</th>
+          <th class="text-left py-4 px-4 text-gray-300 font-semibold">Ação</th>
+         </tr>
         </thead>
-        <tbody  >
-
+        <tbody id="modalTableBody"><!-- Linhas da tabela serão inseridas aqui -->
         </tbody>
-    </table>
-  </div>
-</div>
-
-    <h1 class="titlecomparador">Comparar Produto</h1>
-    <a href="{{ destino_nao }}" download>Baixar Produtos incompativeis</a>
-    <a href="{{ destino_sim }}" download>Baixar Produtos compativeis</a>
-    <button onclick="abrirModal()">compararValores</button>
-    <section class="produtosComparados">
-        {% for bloco in comparacoes%}
-            <div class="containProdutosRasp">
-                <div class="produtoRasp">
-                    <img src="{{bloco.principal.imagem}}" alt="" class="imgProduto">
-                    <h2 class="titleProduto">{{bloco.principal.nome}}</h2>
-                    <span class="conMenorValor">
-                        <p class="valor">{{bloco.principal.preco|formata_moeda }}</p>
-                    </span>
-                </div>
-                <div class="produtosConcorrentes">
-                    {% for concorrente in bloco.concorrentes %}
-                        <div class="cardProduto">
-                            <img src="{{concorrente.imagem}}" alt="" class="imgProduto">
-                            <h2 class="titleProduto">{{concorrente.nome}}</h2>
-                            <span class="conMenorValor">
-                                <p class="valor">{{concorrente.preco|formata_moeda }}</p>
-                            </span>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endfor %}
-    </section>
-    {{resultados_ranking|json_script:"dadosComparacao"}}
+       </table>
+      </div>
+     </div>
+    </div>
+   </div><!-- Loading overlay -->
+   <div id="loadingOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="text-center">
+     <div class="w-20 h-20 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+     <h3 class="text-2xl font-bold mb-2">Analisando loja...</h3>
+     <p class="text-gray-300" id="loadingText">Coletando dados dos produtos</p>
+    </div>
+   </div>
+  </main>
+   {{resultados_ranking|json_script:"dadosComparacao"}}
     {{texto|json_script:"textoAjuste"}}
     <script>
+  let dadosComparacao = JSON.parse(
+    document.getElementById("dadosComparacao").textContent
+);
+console.log("dadosComparacao:", JSON.stringify(dadosComparacao, null, 2));
+// Transforma objeto → lista → achata
 
-        const tabela = document.getElementById("tabelaRanking");
-        const tabelaCorpo = tabela.querySelector("tbody");
-        const conteudoExplicacao = document.getElementById("conteudoExplicacao");
-        let num = 0;
+        let currentData = [];
 
-        function abrirModal() {
-            const resultados_ranking = JSON.parse(document.getElementById("dadosComparacao").textContent);
-            modalCompararValores(resultados_ranking);
-            document.getElementById("meuModal").style.display = "block";
-        }
-
-        function fecharModal() {
-            document.getElementById("meuModal").style.display = "none";
-        }
-
-        function modalCompararValores(value){
-            const resultados_ranking = value;
-            const texto = JSON.parse(document.getElementById("textoAjuste").textContent);
-            conteudoExplicacao.innerHTML = `<p>${texto}</p>`;
-            console.log(resultados_ranking)
-            tabelaCorpo.innerHTML=""
-            resultados_ranking.map((value)=>{
-          
-                const tr = document.createElement("tr");
-
-                if(value.tipo == "principal"){                  
-                    tr.classList = "pdprincipal"
-                }
-                num += 1
-                const tdNum = document.createElement("td")
-                tdNum.textContent = num
-
-                const tdNome = document.createElement("td");
-                tdNome.textContent = value.nome;
-
-                const tdLoja = document.createElement("td");
-                tdLoja.textContent = value.loja;
-
-                const tdPreco = document.createElement("td");
-                tdPreco.textContent = `R$ ${value.preco.toFixed(2)}`;
+        // Handler para mudanças de dados
+        const dataHandler = {
+            onDataChanged(data) {
+                currentData = data;
                 
+            }
+        };
 
-                // adiciona as células na linha
-                tr.appendChild(tdNum);
-                tr.appendChild(tdLoja);
-                tr.appendChild(tdNome);
-                tr.appendChild(tdPreco);
-                tabelaCorpo.appendChild(tr)
-
-            })
+        // Mapeamento para capacidades
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
         }
+
+
+function converterParaCompetitorData(obj) {
+    const resultado = {};
+
+    // Para cada chave (nome do principal)
+    Object.entries(obj).forEach(([nomePrincipal, lista]) => {
+
+        // Garante criação da estrutura
+        resultado[nomePrincipal] = {
+            category: "Sem categoria",
+            competitors: []
+        };
+
+        lista.forEach(item => {
+
+            // Só concorrentes vão para a lista (tipo !== "principal")
+            if (item.tipo === "concorrente") {
+                resultado[nomePrincipal].competitors.push({
+                    name: item.nome || "Sem nome",
+                    price: Number(item.preco) || 0,
+                    store: item.loja || "Loja não informada",
+                    url: item.link || "#",
+                    rating: item.rating || 4.5,
+                    ranking: resultado[nomePrincipal].competitors.length + 1
+                });
+            }
+
+        });
+
+    });
+
+    return resultado;
+}
+        const competitorData = converterParaCompetitorData(dadosComparacao);
+        /* Dados para testes
+        competitorData = {
+            "Smartphone Galaxy S24": {
+                category: "Eletrônicos",
+                competitors: [
+                    { name: "Galaxy S24 Ultra 256GB", price: 2899.99, store: "Samsung Store", url: "samsung.com.br", rating: 4.8, ranking: 1 },
+                    { name: "Galaxy S24 256GB Preto", price: 2799.00, store: "Magazine Luiza", url: "magazineluiza.com.br", rating: 4.7, ranking: 2 },
+                    { name: "Samsung Galaxy S24 5G", price: 2950.90, store: "Americanas", url: "americanas.com.br", rating: 4.6, ranking: 3 },
+                    { name: "Galaxy S24 Violeta 256GB", price: 3099.99, store: "Casas Bahia", url: "casasbahia.com.br", rating: 4.5, ranking: 4 },
+                    { name: "Galaxy S24 Dourado", price: 3199.00, store: "Extra", url: "extra.com.br", rating: 4.4, ranking: 5 }
+                ]
+            },
+            "Notebook Dell Inspiron": {
+                category: "Informática",
+                competitors: [
+                    { name: "Dell Inspiron 15 3000", price: 3299.00, store: "Dell Store", url: "dell.com.br", rating: 4.6, ranking: 1 },
+                    { name: "Inspiron 15 i5 8GB", price: 3499.99, store: "Kabum", url: "kabum.com.br", rating: 4.5, ranking: 2 },
+                    { name: "Dell Inspiron Core i5", price: 3599.90, store: "Ponto Frio", url: "pontofrio.com.br", rating: 4.4, ranking: 3 },
+                    { name: "Notebook Dell 15.6\"", price: 3699.00, store: "Fast Shop", url: "fastshop.com.br", rating: 4.3, ranking: 4 }
+                ]
+            },
+            "Smart TV 55\" 4K": {
+                category: "Eletrônicos",
+                competitors: [
+                    { name: "Smart TV LG 55\" 4K", price: 2199.90, store: "LG Store", url: "lg.com.br", rating: 4.7, ranking: 1 },
+                    { name: "TV 55\" 4K UHD Smart", price: 2299.00, store: "Submarino", url: "submarino.com.br", rating: 4.6, ranking: 2 },
+                    { name: "Smart TV 55 Polegadas", price: 2399.99, store: "Mercado Livre", url: "mercadolivre.com.br", rating: 4.5, ranking: 3 },
+                    { name: "TV LG 55\" UltraHD", price: 2499.90, store: "Ricardo Eletro", url: "ricardoeletro.com.br", rating: 4.4, ranking: 4 },
+                    { name: "Smart TV 4K 55 Pol", price: 2599.00, store: "Carrefour", url: "carrefour.com.br", rating: 4.3, ranking: 5 }
+                ]
+            },
+            "Fone Bluetooth Premium": {
+                category: "Áudio",
+                competitors: [
+                    { name: "AirPods Pro 2ª Geração", price: 299.99, store: "Apple Store", url: "apple.com.br", rating: 4.8, ranking: 1 },
+                    { name: "Fone Bluetooth JBL", price: 249.90, store: "JBL Store", url: "jbl.com.br", rating: 4.6, ranking: 2 },
+                    { name: "Sony WH-1000XM4", price: 399.00, store: "Sony Store", url: "sony.com.br", rating: 4.7, ranking: 3 },
+                    { name: "Fone Sem Fio Premium", price: 199.99, store: "Amazon", url: "amazon.com.br", rating: 4.4, ranking: 4 }
+                ]
+            },
+            "Tablet iPad Air": {
+                category: "Eletrônicos",
+                competitors: [
+                    { name: "iPad Air 5ª Geração", price: 4299.00, store: "Apple Store", url: "apple.com.br", rating: 4.9, ranking: 1 },
+                    { name: "iPad Air 256GB WiFi", price: 4199.99, store: "iPlace", url: "iplace.com.br", rating: 4.8, ranking: 2 },
+                    { name: "Apple iPad Air M1", price: 4399.90, store: "Fast Shop", url: "fastshop.com.br", rating: 4.7, ranking: 3 },
+                    { name: "iPad Air Azul 256GB", price: 4499.00, store: "Magazine Luiza", url: "magazineluiza.com.br", rating: 4.6, ranking: 4 }
+                ]
+            },
+            "Câmera DSLR Canon": {
+                category: "Fotografia",
+                competitors: [
+                    { name: "Canon EOS Rebel T7", price: 2799.99, store: "Canon Store", url: "canon.com.br", rating: 4.7, ranking: 1 },
+                    { name: "DSLR Canon T7 Kit", price: 2699.00, store: "B&H Photo", url: "bhphotovideo.com", rating: 4.6, ranking: 2 },
+                    { name: "Canon EOS T7 18-55mm", price: 2899.90, store: "Foto Registros", url: "fotoregistros.com.br", rating: 4.5, ranking: 3 },
+                    { name: "Câmera Canon Rebel", price: 2999.99, store: "Americanas", url: "americanas.com.br", rating: 4.4, ranking: 4 }
+                ]
+            }
+        };*/
+
+        // Função para simular análise
+        async function simulateAnalysis(storeName, storeUrl) {
+            const loadingTexts = [
+                "Conectando com a loja...",
+                "Coletando dados dos produtos...",
+                "Analisando preços...",
+                "Processando informações...",
+                "Gerando relatório..."
+            ];
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            
+            loadingOverlay.classList.remove('hidden');
+
+            for (let i = 0; i < loadingTexts.length; i++) {
+                loadingText.textContent = loadingTexts[i];
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Simular dados da análise
+            const productCount = Math.floor(Math.random() * 50) + 20;
+            const avgPrice = (Math.random() * 2000 + 500).toFixed(2);
+            const categoryCount = Math.floor(Math.random() * 8) + 3;
+
+            // Salvar análise no Data SDK
+            const analysisData = {
+                store_name: storeName,
+                store_url: storeUrl,
+                analysis_date: new Date().toISOString(),
+                product_count: productCount,
+                avg_price: parseFloat(avgPrice),
+                status: "completed"
+            };
+
+            const result = await window.dataSdk.create(analysisData);
+            if (!result.isOk) {
+                console.error('Erro ao salvar análise:', result.error);
+            }
+
+            loadingOverlay.classList.add('hidden');
+            showResults(storeName, storeUrl, productCount, avgPrice, categoryCount);
+        }
+        simulateAnalysis("teste", "teste.com")
+        // Função para criar tabela de concorrentes
+        function createCompetitorTable(productName, data) {
+            const tableCard = document.createElement('div');
+            tableCard.className = 'table-card glass-effect rounded-2xl p-6 fade-in-up';
+            
+            const topCompetitors = data.competitors.slice(0, 3);
+            
+            tableCard.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="text-xl font-bold gradient-text">${productName}</h4>
+                        <p class="text-gray-400 text-sm">${data.category}</p>
+                    </div>
+                    <div class="text-2xl">🏆</div>
+                </div>
+                
+                <div class="space-y-3">
+                    ${topCompetitors.map(competitor => `
+                        <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="ranking-badge ${getRankingClass(competitor.ranking)}">
+                                    ${competitor.ranking}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-white text-sm">${competitor.name}</div>
+                                    <div class="text-xs text-gray-400">${competitor.store}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-green-400">R$ ${competitor.price.toFixed(2)}</div>
+                                <div class="text-xs text-yellow-400">⭐ ${competitor.rating}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <span class="text-sm text-gray-400">Clique para ver todos os ${data.competitors.length} concorrentes</span>
+                </div>
+            `;
+            
+            tableCard.addEventListener('click', () => openModal(productName, data));
+            return tableCard;
+        }
+
+        // Função para determinar classe do ranking
+        function getRankingClass(ranking) {
+            if (ranking === 1) return 'gold';
+            if (ranking === 2) return 'silver';
+            if (ranking === 3) return 'bronze';
+            return 'default';
+        }
+
+        // Função para abrir modal
+        function openModal(productName, data) {
+            const modal = document.getElementById('tableModal');
+            const modalProductName = document.getElementById('modalProductName');
+            const modalProductCategory = document.getElementById('modalProductCategory');
+            const modalTableBody = document.getElementById('modalTableBody');
+            
+            modalProductName.textContent = productName;
+            modalProductCategory.textContent = data.category;
+            
+            modalTableBody.innerHTML = '';
+            
+            data.competitors.forEach((competitor, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-white/5 hover:bg-white/5 transition-colors';
+                row.style.animationDelay = `${index * 0.1}s`;
+                row.classList.add('fade-in-up');
+                
+                row.innerHTML = `
+                    <td class="py-4 px-4">
+                        <div class="ranking-badge ${getRankingClass(competitor.ranking)}">
+                            ${competitor.ranking}
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="font-semibold text-white">${competitor.name}</div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="font-bold text-green-400">R$ ${competitor.price.toFixed(2)}</div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="text-white">${competitor.store}</div>
+                        <div class="text-xs text-gray-400">${competitor.url}</div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-yellow-400">⭐</span>
+                            <span class="text-white">${competitor.rating}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <a href="https://${competitor.url}" target="_blank" rel="noopener noreferrer" 
+                           class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-3 py-1 rounded-lg text-sm transition-all">
+                            Ver Loja
+                        </a>
+                    </td>
+                `;
+                
+                modalTableBody.appendChild(row);
+            });
+            
+            modal.classList.remove('hidden');
+            modal.querySelector('.glass-effect').classList.add('modal-enter');
+        }
+
+        // Função para fechar modal
+        function closeModal() {
+            const modal = document.getElementById('tableModal');
+            modal.classList.add('hidden');
+            modal.querySelector('.glass-effect').classList.remove('modal-enter');
+        }
+
+        // Função para animar contadores
+        function animateCounters() {
+            const counters = document.querySelectorAll('.counter');
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-target'));
+                const increment = target / 50;
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        counter.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current);
+                    }
+                }, 30);
+            });
+        }
+
+        // Função para efeito parallax
+        function handleParallax() {
+            const elements = document.querySelectorAll('.parallax-element');
+            const scrollTop = window.pageYOffset;
+            
+            elements.forEach(element => {
+                const speed = element.getAttribute('data-speed') || 0.5;
+                const yPos = -(scrollTop * speed);
+                element.style.transform = `translateY(${yPos}px)`;
+            });
+        }
+
+        // Função para mostrar resultados
+        function showResults(storeName, storeUrl, productCount, avgPrice, categoryCount) {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('resultsPage').classList.remove('hidden');
+
+            // Preencher informações da loja
+            document.getElementById('storeNameResult').textContent = storeName;
+            document.getElementById('storeUrlResult').textContent = storeUrl;
+            document.getElementById('analysisDate').textContent = new Date().toLocaleDateString('pt-BR');
+            console.log("Dados enviados", dadosComparacao)
+            // Preencher métricas com animação
+            document.getElementById('productCount').setAttribute('data-target', productCount);
+            document.getElementById('avgPrice').textContent = `R$ ${avgPrice}`;
+            document.getElementById('categoryCount').setAttribute('data-target', Object.keys(competitorData).length);
+
+            // Gerar tabelas de concorrentes
+            const competitorTables = document.getElementById('competitorTables');
+            competitorTables.innerHTML = '';
+
+            Object.entries(competitorData).forEach(([productName, data], index) => {
+                const tableCard = createCompetitorTable(productName, data);
+                tableCard.style.animationDelay = `${index * 0.2}s`;
+                competitorTables.appendChild(tableCard);
+            });
+
+            // Animar contadores após um pequeno delay
+            setTimeout(() => {
+                animateCounters();
+            }, 500);
+
+            // Adicionar event listener para parallax
+            window.addEventListener('scroll', handleParallax);
+        }
+
+        // Event listeners
+        document.getElementById('storeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const storeName = document.getElementById('storeName').value;
+            const storeUrl = document.getElementById('storeUrl').value;
+
+            if (storeName && storeUrl) {
+                await simulateAnalysis(storeName, storeUrl);
+            }
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            document.getElementById('resultsPage').classList.add('hidden');
+            document.getElementById('homePage').classList.remove('hidden');
+            
+            // Remover event listener do parallax
+            window.removeEventListener('scroll', handleParallax);
+            
+            // Limpar formulário
+            document.getElementById('storeForm').reset();
+        });
+
+        // Event listeners para o modal
+        document.getElementById('closeModal').addEventListener('click', closeModal);
+        
+        document.getElementById('tableModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('tableModal')) {
+                closeModal();
+            }
+        });
+
+        // Fechar modal com ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('tableModal').classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // Inicialização
+        async function init() {
+            // Inicializar Data SDK
+            if (window.dataSdk) {
+                const initResult = await window.dataSdk.init(dataHandler);
+                if (!initResult.isOk) {
+                    console.error('Erro ao inicializar Data SDK:', initResult.error);
+                }
+            }
+
+            // Inicializar Element SDK
+            if (window.elementSdk) {
+                window.elementSdk.init({
+                    mapToCapabilities
+                });
+            }
+        }
+
+        // Inicializar quando a página carregar
+        init();
     </script>
-</body>
-</html>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a4f1d41b6760c49',t:'MTc2NDIyMDE3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body></html>

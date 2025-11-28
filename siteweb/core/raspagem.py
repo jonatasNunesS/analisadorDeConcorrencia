@@ -2,8 +2,10 @@ import json
 from playwright.sync_api import sync_playwright
 import random
 import time
+import re
 
-def raspar_dados(playwright, BASE_URL):
+def raspar_dados(playwright, BASE_URL, cepEntrega):
+    status_produtos = {}
     browser = playwright.chromium.launch(headless=False)
     
     USER_AGENTS = [
@@ -18,7 +20,10 @@ def raspar_dados(playwright, BASE_URL):
     )
     page = context.new_page()
     print("[INFO] Acessando página...")
-    page.goto(BASE_URL, timeout=50000)
+    try:
+        page.goto(BASE_URL, timeout=50000)
+    except Exception as e:
+        print(f"[ERRO] Falha ao acessar {linkProduto}: {e}")
     time.sleep(2)
     page.mouse.wheel(0, 1000)
     time.sleep(1)
@@ -39,15 +44,17 @@ def raspar_dados(playwright, BASE_URL):
         if not asin:
             print(f"[SKIP] Produto {i} ignorado (ASIN vazio).")
             continue
+        name_el = card.query_selector('div[data-cy="title-recipe"] a') \
+          or card.query_selector('h2.a-size-mini a.a-link-normal') \
+          or card.query_selector('h2.a-size-base a.a-link-normal')
 
-        price_el = card.query_selector('span.a-price > span.a-offscreen')
-        price = price_el.inner_text().strip() if price_el else None
-        if not price:
-            print(f"[SKIP] Produto {i} ignorado (preço não encontrado {price}).")
+
+        if not name_el:
+            print("Nome do produto não encontrado")
             continue
-        print("Preço recebido:", {price})
-        name_el = card.query_selector('div[data-cy="title-recipe"] a')
-        
+        nome = name_el.inner_text().strip() if name_el else None
+        if not nome or "hq" in nome.lower():
+            continue
         linkProduto = "https://www.amazon.com.br" + name_el.get_attribute('href') if name_el else None
         if not linkProduto:
                 print(f"[SKIP] Produto {i} ignorado (link não encontrado).")
@@ -58,20 +65,34 @@ def raspar_dados(playwright, BASE_URL):
                 user_agent=random.choice(USER_AGENTS),
                 locale="pt-BR")
             produto_page = context.new_page()
-            produto_page.goto(linkProduto, timeout=60000)
+            produto_page.goto(linkProduto, timeout=90000)
             time.sleep(2)
             produto_page.mouse.wheel(0, 1000)
             time.sleep(1)
-            produto_page.wait_for_selector("h1#title span#productTitle")
+            produto_page.wait_for_selector("h1#title span#productTitle", timeout=60000)
             nome_el = produto_page.query_selector("h1#title span#productTitle")
             if not nome_el:
-                raise Exception("Titulo não encontrado")
+                print("Nome do produto não encontrado")
+                continue
             nome = nome_el.inner_text().strip() if nome_el else None
             if not nome or "hq" in nome.lower():
                 continue
+            print("Nome:", nome)
+
+            price_el = produto_page.query_selector("span.a-price span.a-offscreen")
+            price = price_el.inner_text().strip() if price_el else None
+
+            if not price:
+                status_produtos[nome] = {"url": linkProduto, "status": "falha"}
+                print(f"[SKIP] Produto {i} ignorado (preço não encontrado {price}).")
+                continue
+            status_produtos[nome] = {"url": linkProduto, "status": "ok", "preco": price}
+
+            print("Preço:", {price})
 
             nome_loja = produto_page.query_selector("span.offer-display-feature-text-message")
             nomeLoja = nome_loja.inner_text().strip() if nome_loja else None
+            print("Nome loja: ", nome)
 
             img_el = produto_page.query_selector("#imgTagWrapperId #landingImage")
             imagem = img_el.get_attribute("src") if img_el else None
@@ -92,18 +113,74 @@ def raspar_dados(playwright, BASE_URL):
                 except Exception as e:
                     print(f"Erro ao extrair especificação: {e}")
                     continue
+            print("Nome completo: ",nome)
+            # Atualiza o CEP
+            produto_page.wait_for_selector('#glow-ingress-line2', state="visible", timeout=10000)
+            cep_el = produto_page.query_selector('#glow-ingress-line2')
+            cep_atual = cep_el.inner_text().strip() if cep_el else None
+            cep_atual = re.sub(r'\D', '', cep_atual) if cep_atual else None
+            cep_desejado = re.sub(r'\D', '', cepEntrega)
+
+            if cep_atual == cep_desejado:
+                print(f"CEP já está correto: {cep_atual}")
+                # Não tenta clicar de novo, segue direto para capturar frete
+            else:
+                print(f"Atualizando CEP: {cep_atual} -> {cep_desejado}")
+                produto_page.evaluate("window.scrollTo(0, 0)")
+                produto_page.click('#nav-global-location-popover-link', force=True)
+
+                produto_page.wait_for_selector('#GLUXZipUpdateInput_0', state="visible")
+                produto_page.wait_for_selector('#GLUXZipUpdateInput_1', state="visible")
+
+                cep_parte1, cep_parte2 = cep_desejado[:5], cep_desejado[5:]
+                produto_page.fill('#GLUXZipUpdateInput_0', cep_parte1)
+                produto_page.fill('#GLUXZipUpdateInput_1', cep_parte2)
+
+                produto_page.click('#GLUXZipUpdate')
+                produto_page.wait_for_load_state("networkidle")
+
+                cep_el = produto_page.query_selector('#glow-ingress-line2')
+                cep_atualizado = cep_el.inner_text().strip() if cep_el else None
+                print("CEP atualizado:", cep_atualizado)
+            frete_el = produto_page.query_selector(
+                '#mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE'
+            ) or produto_page.query_selector('.shipping-message')
+
+            if frete_el:
+                # Agora seleciona o span interno que tem os atributos
+                span_el = frete_el.query_selector("span[data-csa-c-delivery-price]")
+
+                if span_el:
+                    frete = span_el.get_attribute("data-csa-c-delivery-price")
+                    prazo = span_el.get_attribute("data-csa-c-delivery-time")
+
+                    print("Preço:", frete)
+                    print("Prazo:", prazo)
+                else:
+                    print("Span com atributos não encontrado")
+            else:
+                print("Elemento de frete não encontrado")
+            print("Frete: ", frete)
+            print("Prazo ", prazo)
+            """Essa parte so para testes por enquanto
+            frete = 2.98
+            prazo = "12 de outubro"
+            """
+
             nome = f"{nomeLoja}|{nome}" if nomeLoja else nome
-
+            produto_page.close() 
             print("Certo", nome)
-
+            
             produtos.append({
-                "asin": asin,
-                "nome": nome,
-                "preco": price,
-                "imagem": imagem,
-                "url": linkProduto
+                "asin": asin if asin else print(f"O ASIN de {nome} não foi encontrado no pincipal.\n"),
+                "nome": nome if nome else print(f"O nome de {linkProduto} não foi encontrado na raspagem.\n"),
+                "preco": price if price else 0.0,
+                "imagem": imagem if imagem else print(f"A imagem de {nome} não foi encontrada na raspagem.\n"),
+                "url": linkProduto if linkProduto else print(f"O link de {nome} não foi encontrado na raspagem.\n"),
+                "frete": frete if frete else print(f"O frete de {nome} não foi encontrado na raspagem.\n"),
+                "prazo": prazo if prazo else print(f"O prazo de {nome} não foi encontrado na raspagem.\n"),
             })
-            produto_page.close()  
+             
         except Exception as e:
             print(f"Erro ao acessar {linkProduto}: {e}")
             continue

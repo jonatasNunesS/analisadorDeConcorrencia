@@ -80,7 +80,7 @@ body{
   margin: 10% auto;
   padding: 20px;
   border-radius: 8px;
-  width: 400px;
+  max-width: 75%;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
   animation: slideDown 0.3s ease-in-out;
 }

@@ -29,6 +29,7 @@ pip install pyarrow
 pip install mysqlclient
 pip install psycopg2-binary
 pip install groq
+pip install openpyxl
 //-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --//
 
 /*Banco de dados*/

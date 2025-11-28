@@ -1,9 +1,11 @@
+
 import pandas as pd
 import os
 from datetime import datetime
 from django.conf import settings
+import re
 
-def raspagem_concorrentes(produtos, numPage):
+def raspagem_concorrentes(produtos, numPage, cep):
     raspagem = []
     for produto in produtos:
         bloco = {
@@ -11,56 +13,74 @@ def raspagem_concorrentes(produtos, numPage):
                 "nome": produto["nome"],
                 "preco": produto["preco"],
                 "imagem": "https://via.placeholder.com/150",
-                "url": "https://www.amazon.com.br/dp/fake"
+                "url": "https://www.amazon.com.br/dp/fake",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
             },
             "concorrentes": [
                 {
-                    "nome": f"{produto['nome']} Concorrente A | Marca:XYZ | Voltagem:220V",
+                    "nome": f"{produto['nome']} Concorrente A ",
                     "preco": "R$ 129,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeA"
+                    "url": "https://www.amazon.com.br/dp/fakeA",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                 {
- "nome": f"{produto['nome']} Concorrente B | Marca:ABC | Voltagem:110V",
+ "nome": f"Loja | {produto['nome']} Concorrente B",
                     "preco": "R$ 123,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                  {
- "nome": f"{produto['nome']} Concorrente c | Marca:ABC | Voltagem:110V",
+ "nome": f"Loja | {produto['nome']} Concorrente c ",
                     "preco": "R$ 110,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                 {
-                "nome": f"{produto['nome']} Concorrente d | Marca:ABC | Voltagem:110V",
+                "nome": f"Loja | {produto['nome']} Concorrente d ",
                     "preco": "R$ 10010,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                 {
-                "nome": f"{produto['nome']} Concorrente e | Marca:ABC | Voltagem:110V",
+                "nome": f"Loja | {produto['nome']} Concorrente e",
                     "preco": "R$ 100,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                 {
-                "nome": f"{produto['nome']} Concorrente f | Marca:ABC | Voltagem:110V",
+                "nome": f"Loja |{produto['nome']} | Concorrente e",
                     "preco": "R$ 98,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                 {
-                "nome": f"{produto['nome']} Concorrente g | Marca:ABC | Voltagem:110V",
+                "nome": f"Loja | {produto['nome']} | Concorrente f",
                     "preco": "R$ 140,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 },
                 {
-                "nome": f"{produto['nome']} Concorrente h | Marca:ABC | Voltagem:110V",
+                "nome": f"Loja | {produto['nome']} | Concorrente g",
                     "preco": "R$ 142,99",
                     "imagem": "https://via.placeholder.com/150",
-                    "url": "https://www.amazon.com.br/dp/fakeB"
+                    "url": "https://www.amazon.com.br/dp/fakeB",
+                    "frete": 4.25,
+                    "prazo": "18 de outubro",
                 }
             ]
         }
@@ -87,6 +107,7 @@ def raspagem_concorrentes(produtos, numPage):
 
     return raspagem, nome_arquivo
 """
+
 #codigo ia
 import pandas as pd
 import os
@@ -94,10 +115,15 @@ from datetime import datetime
 from playwright.sync_api import sync_playwright
 import random
 import time
+from django.conf import settings
+from siteweb.core.servicos import separarLoja
+import re
 
 # Função para buscar concorrentes na Amazon
-def buscar_concorrentes(produto_nome, max_pages):
-    url_base = f"https://www.amazon.com.br/s?k={produto_nome.replace(' ', '+')}"
+def buscar_concorrentes(produto_nome, max_pages, cep):
+    partesName  = separarLoja(produto_nome)
+    print("\n---\nBuscando concorrentes para:", partesName[1],"\nLoja:", partesName[0],"\n---\n")
+    url_base = f"https://www.amazon.com.br/s?k={partesName[1].replace(' ', '+')}"
     concorrentes = []
     
     USER_AGENTS = [
@@ -118,8 +144,8 @@ def buscar_concorrentes(produto_nome, max_pages):
             page.wait_for_selector("div.s-main-slot")
 
             cards = page.query_selector_all("div[data-component-type='s-search-result']")
+            
             for card in cards:
-
                 link_el = card.query_selector("a.a-link-normal")
                 if not link_el:
                     print("Nenhum link encontrado: ", link_el)
@@ -131,14 +157,11 @@ def buscar_concorrentes(produto_nome, max_pages):
                 preco_el = card.query_selector("span.a-price span.a-offscreen")
                 preco = preco_el.inner_text().strip() if preco_el else None
                 try:
-                    context = browser.new_context(
-                        user_agent=random.choice(USER_AGENTS),
-                        locale="pt-BR")
                     produto_page = context.new_page()
                     produto_page.goto(url, timeout=60000)
                     time.sleep(2)
                     produto_page.mouse.wheel(0, 1000)
-                    time.sleep(1)
+
                     produto_page.wait_for_selector("h1#title span#productTitle")
                     nome_el = produto_page.query_selector("h1#title span#productTitle")
                     if not nome_el:
@@ -169,15 +192,68 @@ def buscar_concorrentes(produto_nome, max_pages):
                         except Exception as e:
                             print(f"Erro ao extrair especificação: {e}")
                             continue
+                    # Atualiza o CEP
+                    produto_page.wait_for_selector('#glow-ingress-line2', state="visible", timeout=10000)
+                    cep_el = produto_page.query_selector('#glow-ingress-line2')
+                    cep_atual = cep_el.inner_text().strip() if cep_el else None
+                    cep_atual = re.sub(r'\D', '', cep_atual) if cep_atual else None
+                    cep_desejado = re.sub(r'\D', '', cep)
+
+                    if cep_atual == cep_desejado:
+                        print(f"CEP já está correto: {cep_atual}")
+                        # Não tenta clicar de novo, segue direto para capturar frete
+                    else:
+                        print(f"Atualizando CEP: {cep_atual} -> {cep_desejado}")
+                        produto_page.evaluate("window.scrollTo(0, 0)")
+                        produto_page.click('#nav-global-location-popover-link', force=True)
+
+                        produto_page.wait_for_selector('#GLUXZipUpdateInput_0', state="visible")
+                        produto_page.wait_for_selector('#GLUXZipUpdateInput_1', state="visible")
+
+                        cep_parte1, cep_parte2 = cep_desejado[:5], cep_desejado[5:]
+                        produto_page.fill('#GLUXZipUpdateInput_0', cep_parte1)
+                        produto_page.fill('#GLUXZipUpdateInput_1', cep_parte2)
+
+                        produto_page.click('#GLUXZipUpdate')
+                        produto_page.wait_for_load_state("networkidle")
+
+                        cep_el = produto_page.query_selector('#glow-ingress-line2')
+                        cep_atualizado = cep_el.inner_text().strip() if cep_el else None
+                        print("CEP atualizado:", cep_atualizado)
+
+                        frete_el = produto_page.query_selector(
+                            '#mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE'
+                        ) or produto_page.query_selector('.shipping-message')
+
+                        if frete_el:
+                            # Agora seleciona o span interno que tem os atributos
+                            span_el = frete_el.query_selector("span[data-csa-c-delivery-price]")
+
+                            if span_el:
+                                frete = span_el.get_attribute("data-csa-c-delivery-price")
+                                prazo = span_el.get_attribute("data-csa-c-delivery-time")
+
+                                print("Preço:", frete)
+                                print("Prazo:", prazo)
+                            else:
+                                print("Span com atributos não encontrado")
+                        else:
+                            print("Elemento de frete não encontrado")
+                        print("Frete: ", frete)
+                        print("Prazo ", prazo)
+
+
                     nome = f"{nomeLoja}|{nome}" if nomeLoja else nome
 
                     print("Certo", nome)
 
                     concorrentes.append({
                         "nome": nome,
-                        "preco": preco,
-                        "imagem": imagem,
-                        "url": linkLoja
+                        "preco": preco if preco else print(f"O preço de {nome} não foi encontrado na raspagem.\n"),
+                        "imagem": imagem if imagem else print(f"A imagem de {nome} não foi encontrada na raspagem.\n"),
+                        "url": linkLoja if linkLoja else print(f"O link de {nome} não foi encontrado na raspagem.\n"),
+                        "frete": frete if frete else print(f"O frete de {nome} não foi encontrado na raspagem.\n"),
+                        "prazo": prazo if prazo else print(f"O prazo de {nome} não foi encontrado na raspagem.\n"),
                     })
                     produto_page.close()  
                 except Exception as e:
@@ -185,38 +261,15 @@ def buscar_concorrentes(produto_nome, max_pages):
                     continue
 
                 """"""
-                nome_el = card.query_selector("h2 span")
-                nome = nome_el.inner_text().strip() if nome_el else None
-                if not nome or "hq" in nome.lower():
-                    continue
-                
-                preco_el = card.query_selector("span.a-price span.a-offscreen")
-                preco = preco_el.inner_text().strip() if preco_el else None
-
-                img_el = card.query_selector("img.s-image")
-                imagem = img_el.get_attribute("src") if img_el else None
-
-                link_el = card.query_selector("h2 a")
-                href = link_el.evaluate('node => node.getAttribute("href")') if link_el else None
-                url = f"https://www.amazon.com.br{href}" if href else None
-
-                concorrentes.append({
-                    "nome": nome,
-                    "preco": preco,
-                    "imagem": imagem,
-                    "url": url
-                })
-                """"""
-
         browser.close()
     return concorrentes
 
 # Função principal
-def raspagem_concorrentes(produtos, numPage):
-    raspagem = []
+def raspagem_concorrentes(produtos, numPage, cep):
+    raspagem = []  
     num_paginas = int(numPage)
     for produto in produtos:
-        concorrentes = buscar_concorrentes(produto["nome"], num_paginas)
+        concorrentes = buscar_concorrentes(produto["nome"], num_paginas, cep)
         print(f"1° produto {produto["nome"]}")
         bloco = {
             "principal": {
@@ -231,9 +284,10 @@ def raspagem_concorrentes(produtos, numPage):
 
     linhas = []
     #Cria um dataframe pra salva em parquet
+    
     for bloco in raspagem:
         principal = bloco["principal"]
-        principal_txt = f"{principal['nome']}|{principal['preco']}"
+        principal_txt = f"{principal['nome']}|{principal['preco']}" 
         for concorrente in bloco["concorrentes"]:
             concorrente_txt = f"{concorrente['nome']}|{concorrente['preco']}"
             linhas.append({
@@ -244,12 +298,10 @@ def raspagem_concorrentes(produtos, numPage):
     df = pd.DataFrame(linhas)
     df = df.astype(str)
     os.makedirs("media", exist_ok=True)
-    nome_arquivo = f"comparacao_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
-    caminho = os.path.join("media", nome_arquivo)
+    nome_arquivo = f"comparacao-{datetime.now().strftime('%d-%m-%Y_%H%M')}.parquet"
+    #caminho = os.path.join("media/concorrentesRaspagem", nome_arquivo)
+    caminho = f"{settings.MEDIA_ROOT}/concorrentesRaspagem/{nome_arquivo}"
     df.to_parquet(caminho, index=False, engine="pyarrow")
 
     return raspagem, nome_arquivo
-
-
-
 """

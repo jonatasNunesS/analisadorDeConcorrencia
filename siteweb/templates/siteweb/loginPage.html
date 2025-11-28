@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/formLogin.css' %}">
+    
+    <title>Document</title>
+</head>
+<body>
+
+    <form action="{% url 'verificar_usuario' %}" method="post" class="formLogin">
+        {% csrf_token %}
+        <fieldset>
+            <legend>login</legend>
+        </fieldset>
+        <fieldset>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required maxlength="100" minlength="1" >
+        </fieldset>
+        
+        <fieldset>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required maxlength="50" minlength="1">
+        </fieldset>
+        <input class="button_login" type="submit" value="Login">
+    </form>
+    <h1>Teste</h1>
+</body>
+</html>
