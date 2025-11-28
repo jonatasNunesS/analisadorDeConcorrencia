@@ -45,5 +45,12 @@ O banco de dados utilizado foi o postgree
 .\psql -U postgres -d trabamazon;
 senha: 123
 
-
+//-- -- -- -- --
+Docker e N8N
+ -- Instale o Docker Desktop no pc
+ wsl --update #Instalar para abrir o docker Desktop
+ -- Inicie o Docker Desktop
+docker build -t analisador . #Constroi a imagem analisador no docker
+docker images 
+docker run -p 8000:8000 analisador  #Iniciar a imagem no docker
 

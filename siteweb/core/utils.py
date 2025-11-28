@@ -39,6 +39,7 @@ def salvar_loja(request):
                 produtos = Produto.objects.filter(loja_id = nova_loja.id).all()
                 if not produtos.exists():
                     for produto in produtosLoja:
+                        codigo_prod = produto.get('codigoProduto')
                         nome_prod = produto.get('nome')
                         print(nome_prod)
                         precoBruto = produto.get('preco')
@@ -47,6 +48,7 @@ def salvar_loja(request):
                         url_prod = produto.get('url')
                         if not Produto.objects.filter(nome=nome_prod, loja_id=nova_loja.id).exists():
                             Produto.objects.create(
+                                codigoProduto = codigo_prod,
                                 nome=nome_prod,
                                 preco=preco_prod,   
                                 imagem=imagem_prod,

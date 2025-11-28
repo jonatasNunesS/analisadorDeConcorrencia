@@ -59,7 +59,6 @@ def executar_raspagem(urlLoja, cepEntrega):
                 nomeLoja = selected_text.strip()
                 print(f"Nome da loja obtido: {nomeLoja}")
     chave_cache = f"loja:{nomeLoja}"
-    #produtos = 
     produtos_json = ler_cache(chave_cache)
     produtos = json.loads(produtos_json) if produtos_json else []
     produtos = list(produtos)
@@ -76,6 +75,7 @@ def executar_raspagem(urlLoja, cepEntrega):
                     produtos = raspar_dados(playwright, urlLoja, cepEntrega)
                     produto_list = [
                         {
+                        "codigoProduto":p["codigoProduto"] if isinstance(p, dict) else p.codigoProduto,
                         "nome": p["nome"] if isinstance(p, dict) else p.nome,
                             "preco": (
                         float(
@@ -102,6 +102,7 @@ def executar_raspagem(urlLoja, cepEntrega):
                 print("Produtos encontrados no DB: " , len(produtos))
                 produto_list = [
                     {
+                        "codigoProduto":p["codigoProduto"] if isinstance(p, dict) else p.codigoProduto,
                         "nome": p["nome"] if isinstance(p, dict) else p.nome,
                         "preco": float(p.preco),
                         "imagem": p.imagem if p.imagem else None,

@@ -9,6 +9,7 @@ class Loja(models.Model):
         return self.nome
 
 class Produto(models.Model):
+    codigoProduto = models.CharField(max_length=400, default=0)
     nome = models.CharField(max_length=800)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     imagem = models.TextField(null=True, blank=True)
