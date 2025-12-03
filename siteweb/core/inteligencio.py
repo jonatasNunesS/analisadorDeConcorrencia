@@ -14,8 +14,8 @@ if modeloIa == "ollama":
     ollama_url = "http://localhost:11434/api/generate"
     MODELOI = "mistral"
 elif modeloIa == "groq":
-    try:
-        API_KEY = "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"#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
+    try:#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
+        API_KEY = "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"#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
         MODELOI = "openai/gpt-oss-20b"
         client = Groq(api_key=API_KEY)
     except Exception as e:
@@ -165,8 +165,6 @@ Justificativa do preco: breve explicação do ajuste de preco
 # ------------------ Pipeline de processamento ------------------
 
 def processarDados(raspagem, nivelCompat):
-    print("\n\nDados recebidinhos:\n", raspagem)
-
     resultados_sim = {}
     resultados_nao = {}
     todas_analises = []
@@ -176,17 +174,18 @@ def processarDados(raspagem, nivelCompat):
         concorrentes = item.get("concorrentes", [])
 
         nome_p = principal.get("nome")
+        codigo_p= principal.get("codigoProduto")
         preco_p = principal.get("preco")
 
         # Mantém o formato ANTIGO (corretíssimo)
         info_principal = {
             "nome": nome_p,
             "preco": preco_p,
-            "loja": principal.get("loja"),
+            "loja": principal.get("nomeLoja"),
             "imagem": principal.get("imagem"),
             "url": principal.get("url"),
             "frete": principal.get("frete"),
-            "link": principal.get("link"),   # caso exista
+            "prazo": principal.get("prazo"),
         }
 
         resultados_sim[nome_p] = {
@@ -200,33 +199,53 @@ def processarDados(raspagem, nivelCompat):
         }
 
         for c in concorrentes:
+            codigo_c = c.get("codigoProduto")
             nome_c = c.get("nome")
             preco_c = c.get("preco")
+            if(codigo_p == codigo_c):
+                linha = {
+                    "nome": nome_c,
+                    "preco": preco_c,
+                    "imagem": c.get("imagem"),
+                    "url": c.get("url"),
+                    "frete": c.get("frete"),
+                    "prazo": c.get("prazo"),
+                    "loja": c.get("nomeLoja"),
+                    "compatibilidade": "SIM",
+                    "justificativa": "Os dois codigos de produto são iguais, não prescisou passar pela Ia",
+                    "preco_sugerido": "Sem preço sugerido",
+                    "justificativa_preco": "Sem Justificativa",
+                }
+                print("\n🔎 Codigos de produtos iguais")
+                print("Principal   :", principal)
+                print("Concorrente :", nome_c)
+                print("Preço Principal:", preco_p)
+                print("Preço Concorrente:", preco_c)
+                print(f"\n\n")
+            else:
+                resultado_ia = comparar_com_ia(
+                    principal=nome_p,
+                    concorrente=nome_c,
+                    preco_principal=preco_p,
+                    preco_concorrente=preco_c,
+                    nivelCompat=nivelCompat
+                )
 
-            resultado_ia = comparar_com_ia(
-                principal=nome_p,
-                concorrente=nome_c,
-                preco_principal=preco_p,
-                preco_concorrente=preco_c,
-                nivelCompat=nivelCompat
-            )
+                linha = {
+                    "nome": nome_c,
+                    "preco": preco_c,
+                    "loja": c.get("nomeLoja"),
+                    "imagem": c.get("imagem"),
+                    "url": c.get("url"),
+                    "frete": c.get("frete"),
+                    "prazo": c.get("prazo"),
 
-            linha = {
-                # DADOS DO CONCORRENTE (com todos os campos preservados)
-                "nome": nome_c,
-                "preco": preco_c,
-                "loja": c.get("loja"),
-                "imagem": c.get("imagem"),
-                "url": c.get("url"),
-                "frete": c.get("frete"),
-                "link": c.get("link"),
-
-                # RESULTADO DA IA
-                "compatibilidade": resultado_ia["compatibilidade"],
-                "justificativa": resultado_ia["justificativa"],
-                "preco_sugerido": resultado_ia["preco_sugerido"],
-                "justificativa_preco": resultado_ia["justificativa_preco"],
-            }
+                    # RESULTADO DA IA
+                    "compatibilidade": resultado_ia["compatibilidade"],
+                    "justificativa": resultado_ia["justificativa"],
+                    "preco_sugerido": resultado_ia["preco_sugerido"],
+                    "justificativa_preco": resultado_ia["justificativa_preco"],
+                }
 
             # Adiciona ao histórico geral
             todas_analises.append({

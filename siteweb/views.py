@@ -48,7 +48,6 @@ def raspar_loja(request):
             urlLoja = request.POST.get("urlLoja")
             cepEntrega = request.POST.get("cepEntrega")
             produto, nomeLoja, chave_cache = executar_raspagem(urlLoja, cepEntrega) #ler_cache(chave_cache)  
-            print("Produtos: ",produto)
 
             return render(request, 'siteweb/detalhesLoja.html', {
                 'loja': {'nome': nomeLoja, 'url':urlLoja, 'chave-cache':chave_cache},

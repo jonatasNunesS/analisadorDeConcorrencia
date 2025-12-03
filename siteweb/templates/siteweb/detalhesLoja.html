@@ -91,15 +91,15 @@
             {% for produto in produtos %}
                 <div class="cardProduto">
                     <input type="checkbox" name="checkCard" class="checkCard"
-                        data-nomeLoja="{{loja.nome}}"
-                        data-urlLoja="{{loja.url}}"
-                        data-codigoProduto="{{produto.codigoProduto}}"
-                        data-nomeProduto="{{produto.nome}}"
-                        data-precoProduto="{{produto.preco}}"
-                        data-imagemProduto="{{produto.imagem}}"
-                        data-urlProduto="{{produto.url}}"
-                        data-freteProduto="{{produto.frete}}"
-                        data-prazoProduto="{{produto.prazo}}"
+                        data-nomeloja="{{loja.nome}}"
+                        data-urlloja="{{loja.url}}"
+                        data-codigoproduto="{{produto.codigoProduto}}"
+                        data-nomeproduto="{{produto.nome}}"
+                        data-precoproduto="{{produto.preco}}"
+                        data-imagemproduto="{{produto.imagem}}"
+                        data-urlproduto="{{produto.url}}"
+                        data-freteproduto="{{produto.frete}}"
+                        data-prazoproduto="{{produto.prazo}}"
                     >
                     <img src="{{produto.imagem}}" alt="" class="imgProduto">
                     <h2 class="titleProduto">{{produto.nome}}</h2>
@@ -114,6 +114,15 @@
 
     <script>
         function compararProdutos(){ 
+           /* const checkedBoxes = Array.from(document.querySelectorAll('.checkCard'))
+            .map(checkbox => ({
+                nome: checkbox.dataset.nomeproduto,
+                preco: checkbox.dataset.precoproduto
+                    ? checkbox.dataset.precoproduto.replace("R$", "").replace(/\s/g, "").replace(",", ".")
+                    : null,
+                imagem: checkbox.dataset.imagemproduto,
+            }));
+            console.log(checkedBoxes);*/
             const checkedBoxes = Array.from(document.querySelectorAll('.checkCard'))
             .filter(checkbox => checkbox.checked)
             .map(checkbox =>({
@@ -195,34 +204,52 @@
             });
         }
         function salvarLoja(dados){
-            const nomeLoja = dados.dataset.nome;
-            const urlLoja = dados.dataset.url;
-            const produtosLoja = Array.from(document.querySelectorAll('.checkCard'))
-            .map(dados =>({
-                nome: dados.dataset.nomeproduto,
-                preco: dados.dataset.precoproduto,
-                imagem: dados.dataset.imagemproduto,
-                url: dados.dataset.urlproduto
-            }));
-            console.log(`Passando ${produtosLoja.length} produtos`)
-            console.log("Loja: "+ nomeLoja +"| Url: "+ urlLoja);
-            fetch("{% url 'salvar_loja' %}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
-                },
-                body: JSON.stringify({
-                    nome: nomeLoja,
-                    url: urlLoja,
-                    produtosLoja:produtosLoja
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.mensagem);
-            });
-        }
+    const nomeLoja = dados.dataset.nome;
+    const urlLoja = dados.dataset.url;
+
+    // Agora pega TODOS os checkboxes, mesmo os não marcados
+    const produtosLoja = Array.from(document.querySelectorAll('.checkCard'))
+        .map(dados => ({
+            codigoProduto: dados.dataset.codigoproduto,
+            nome: dados.dataset.nomeproduto,
+            preco: dados.dataset.precoproduto,
+            imagem: dados.dataset.imagemproduto,
+            url: dados.dataset.urlproduto,
+            frete: dados.dataset.freteproduto,
+            prazo: dados.dataset.prazoproduto
+        }));
+
+console.log(`Passando ${produtosLoja.length} produtos`);
+
+// Itera sobre cada produto para imprimir os detalhes
+produtosLoja.forEach((produto, index) => {
+    console.log(`\nProduto ${index + 1}:`);
+    console.log(` Nome: ${produto.nome}`);
+    console.log(` Prazo: ${produto.prazo}`);
+    console.log(` Frete: ${produto.frete}`);
+});
+
+console.log("Loja: " + nomeLoja + " | Url: " + urlLoja);
+
+
+    fetch("{% url 'salvar_loja' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({
+            nome: nomeLoja,
+            url: urlLoja,
+            produtosLoja: produtosLoja
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.mensagem);
+    });
+}
+
     </script>
 </body>
 </html>

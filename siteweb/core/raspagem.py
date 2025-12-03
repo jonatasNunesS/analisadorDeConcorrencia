@@ -1,209 +1,6 @@
-"""import json
-from playwright.sync_api import sync_playwright
-import random
-import time
-import re
-
-def raspar_dados(playwright, BASE_URL, cepEntrega):
-    status_produtos = {}
-    browser = playwright.chromium.launch(headless=False)
-    
-    USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/116 Safari/537.36"
-    ]
-    viewport={"width": 1280, "height": 800}
-    context = browser.new_context(
-        user_agent=random.choice(USER_AGENTS),
-        viewport={"width":1280,"height":800}
-    )
-    page = context.new_page()
-    print("[INFO] Acessando página...")
-    try:
-        page.goto(BASE_URL, timeout=50000)
-    except Exception as e:
-        print(f"[ERRO] Falha ao acessar {linkProduto}: {e}")
-    time.sleep(2)
-    page.mouse.wheel(0, 1000)
-    time.sleep(1)
-    if "algo deu errado" in page.content():
-        print("[ERRO] Página de erro detectada. Abortando raspagem.")
-        browser.close()
-        return []
-
-    page.wait_for_selector('div.s-main-slot', timeout=15000)
-    print("[INFO] Página carregada, buscando produtos...")
-
-    product_cards = page.query_selector_all('div.s-main-slot div[data-asin]:not([data-asin=""])')
-    print(f"[INFO] Total de blocos com data-asin: {len(product_cards)}")
-
-    produtos = []
-    for i, card in enumerate(product_cards, 1):
-        name_el = card.query_selector('div[data-cy="title-recipe"] a') \
-          or card.query_selector('h2.a-size-mini a.a-link-normal') \
-          or card.query_selector('h2.a-size-base a.a-link-normal')
-        if not name_el:
-            print("Nome do produto não encontrado")
-            continue
-        nome = name_el.inner_text().strip() if name_el else None
-        if not nome or "hq" in nome.lower():
-            continue
-        linkProduto = "https://www.amazon.com.br" + name_el.get_attribute('href') if name_el else None
-        if not linkProduto:
-                print(f"[SKIP] Produto {i} ignorado (link não encontrado).")
-                continue
-        print("Link recebido:", {linkProduto})
-    
-        def pegarDados(browser, linkProduto, cepEntrega, tentativas=1):
-            for tentativa in range(tentativas):
-                try:
-                    context = browser.new_context(
-                        user_agent=random.choice(USER_AGENTS),
-                        locale="pt-BR")
-                    produto_page = context.new_page()
-                    produto_page.goto(linkProduto, timeout=50000)
-                    time.sleep(2)
-                    produto_page.mouse.wheel(0, 1000)
-                    time.sleep(1)
-                    produto_page.wait_for_selector("h1#title span#productTitle", timeout=60000)
-                    nome_el = produto_page.query_selector("h1#title span#productTitle")
-                    if not nome_el:
-                        print("Nome do produto não encontrado")
-                        status_produtos[nome] = {"url": linkProduto, "status": "Nome não escontrado"}
-                    nome = nome_el.inner_text().strip() if nome_el else None
-                    if not nome or "hq" in nome.lower():
-                        status_produtos[nome] = {"url": linkProduto, "status": "Nome não escontrado"}
-                        continue
-                    print("Nome:", nome)
-
-                    match = re.search(r"/dp/([A-Z0-9]+)/", linkProduto)
-                    codigoProduto = match.group(1)
-                    if not codigoProduto:
-                        status_produtos[nome] = {"url": linkProduto, "status": "Codigo não escontrado"}
-                        print("Codigo do produto não encontrado")
-                        continue
-                    print("Codigo produto:",codigoProduto)
-
-                    price_el = produto_page.query_selector("span.a-price span.a-offscreen")
-                    price = price_el.inner_text().strip() if price_el else None
-                    if not price:
-                        status_produtos[nome] = {"url": linkProduto, "status": "Preço não escontrado"}
-                        print(f"[SKIP] Produto {i} ignorado (preço não encontrado {price}).")
-                        continue
-                    status_produtos[nome] = {"url": linkProduto, "status": "ok", "preco": price}
-
-                    print("Preço:", {price})
-
-                    nome_loja = produto_page.query_selector("span.offer-display-feature-text-message")
-                    nomeLoja = nome_loja.inner_text().strip() if nome_loja else None
-                    print("Nome loja: ", nome)
-
-                    img_el = produto_page.query_selector("#imgTagWrapperId #landingImage")
-                    imagem = img_el.get_attribute("src") if img_el else None
-
-                    # Seleciona todas as linhas da tabela de especificações
-                    rows = produto_page.query_selector_all("table.a-normal tbody tr")
-
-                    for row in rows:
-                        try:
-                            label_el = row.query_selector("td.a-span3 span.a-text-bold")
-                            value_el = row.query_selector("td.a-span9 span.po-break-word")
-
-                            label = label_el.inner_text().strip() if label_el else None
-                            value = value_el.inner_text().strip() if value_el else None
-
-                            if label and value:
-                                nome += f"|{label}:{value}"
-                        except Exception as e:
-                            print(f"Erro ao extrair especificação: {e}")
-                            continue
-                    print("Nome completo: ",nome)
-                    # Atualiza o CEP
-                    produto_page.wait_for_selector('#glow-ingress-line2', state="visible", timeout=10000)
-                    cep_el = produto_page.query_selector('#glow-ingress-line2')
-                    cep_atual = cep_el.inner_text().strip() if cep_el else None
-                    cep_atual = re.sub(r'\D', '', cep_atual) if cep_atual else None
-                    cep_desejado = re.sub(r'\D', '', cepEntrega)
-
-                    if cep_atual == cep_desejado:
-                        print(f"CEP já está correto: {cep_atual}")
-                        # Não tenta clicar de novo, segue direto para capturar frete
-                    else:
-                        print(f"Atualizando CEP: {cep_atual} -> {cep_desejado}")
-                        produto_page.evaluate("window.scrollTo(0, 0)")
-                        produto_page.click('#nav-global-location-popover-link', force=True)
-
-                        produto_page.wait_for_selector('#GLUXZipUpdateInput_0', state="visible")
-                        produto_page.wait_for_selector('#GLUXZipUpdateInput_1', state="visible")
-
-                        cep_parte1, cep_parte2 = cep_desejado[:5], cep_desejado[5:]
-                        produto_page.fill('#GLUXZipUpdateInput_0', cep_parte1)
-                        produto_page.fill('#GLUXZipUpdateInput_1', cep_parte2)
-
-                        produto_page.click('#GLUXZipUpdate')
-                        produto_page.wait_for_load_state("networkidle")
-
-                        cep_el = produto_page.query_selector('#glow-ingress-line2')
-                        cep_atualizado = cep_el.inner_text().strip() if cep_el else None
-                        print("CEP atualizado:", cep_atualizado)
-                    frete_el = produto_page.query_selector(
-                        '#mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE'
-                    ) or produto_page.query_selector('.shipping-message')
-
-                    if frete_el:
-                        # Agora seleciona o span interno que tem os atributos
-                        span_el = frete_el.query_selector("span[data-csa-c-delivery-price]")
-
-                        if span_el:
-                            frete = span_el.get_attribute("data-csa-c-delivery-price")
-                            prazo = span_el.get_attribute("data-csa-c-delivery-time")
-
-                            print("Preço:", frete)
-                            print("Prazo:", prazo)
-                        else:
-                            print("Span com atributos não encontrado")
-                    else:
-                        print("Elemento de frete não encontrado")
-                    print("Frete: ", frete)
-                    print("Prazo ", prazo)
-
-                    nome = f"{nomeLoja}|{nome}" if nomeLoja else nome
-                    produto_page.close() 
-                    print("Certo", nome)
-                    
-                    produtos.append({
-                        "codigoProduto": codigoProduto if codigoProduto else print(f"O codigoProduto de {nome} não foi encontrado no pincipal.\n"),
-                        "nome": nome if nome else print(f"O nome de {linkProduto} não foi encontrado na raspagem.\n"),
-                        "preco": price if price else 0.0,
-                        "imagem": imagem if imagem else print(f"A imagem de {nome} não foi encontrada na raspagem.\n"),
-                        "url": linkProduto if linkProduto else print(f"O link de {nome} não foi encontrado na raspagem.\n"),
-                        "frete": frete if frete else print(f"O frete de {nome} não foi encontrado na raspagem.\n"),
-                        "prazo": prazo if prazo else print(f"O prazo de {nome} não foi encontrado na raspagem.\n"),
-                    })
-                except Exception as e:
-                    print(f"[ERRO] Tentativa {tentativa+1} falhou para {linkProduto}: {e}")
-                    if tentativa == tentativas - 1:
-                        print("[ERRO] Todas as tentativas falharam, pulando produto.")
-                        status_produtos[nome] = {"url": linkProduto, "status": "Preço não escontrado"}
-                        return None
-
-        pegarDados(browser ,linkProduto, cepEntrega)
-    print(f"[INFO] Total de produtos válidos encontrados: {len(produtos)}")
-    print(status_produtos)
-    with open("amazon_data.json", "w", encoding="utf-8") as f:
-        json.dump(produtos, f, indent=4, ensure_ascii=False)
-
-    browser.close()
-    if(produtos == 1 or produtos == None or produtos == "" or produtos == 0 ):
-        print(f"Numero de Produtos passados {produtos}")
-        print("A raspagem houve um erro, sera refeita!")
-        raspar_dados()
-    return produtos
-"""
-
+#raspagem.py
 import json
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError
 import random
 import time
 import re
@@ -211,13 +8,38 @@ import re
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/116 Safari/537.36"
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/116 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; rv:116.0) Gecko/20100101 Firefox/116.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
 ]
+
+# ====================================================================
+# REMOVE POPUPS DA AMAZON
+# ====================================================================
+def fechar_popups(page):
+    try:
+        popups = page.query_selector_all(
+            ".a-popover, .a-modal-scroller, .a-modal-overlay, [role='dialog'], .a-sheet"
+        )
+        for p in popups:
+            try:
+                p.evaluate("el => el.remove()")
+            except:
+                pass
+        page.keyboard.press("Escape")
+        time.sleep(0.3)
+    except:
+        pass
+
 
 # ====================================================================
 # FUNÇÃO PRINCIPAL
 # ====================================================================
 def raspar_dados(playwright, BASE_URL, cepEntrega):
+
+    print("\n============================")
+    print("🚀 INICIANDO RASPAGEM AMAZON")
+    print("============================\n")
 
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(
@@ -225,64 +47,118 @@ def raspar_dados(playwright, BASE_URL, cepEntrega):
         viewport={"width": 1280, "height": 800},
         locale="pt-BR"
     )
-
     page = context.new_page()
     produtos = []
-    status_produtos = {}
+    pagina_atual = 1
 
-    print("[INFO] Acessando página inicial...")
-
+    # ---------- Abrir página inicial ----------
     try:
+        print("[INFO] Acessando página inicial...")
         page.goto(BASE_URL, timeout=70000)
         page.wait_for_selector('div.s-main-slot', timeout=60000)
+        print("[OK] Página carregada!")
+    except TimeoutError:
+        print("[ERRO] Timeout ao abrir página inicial.")
+        browser.close()
+        return []
     except Exception as e:
         print(f"[ERRO] Falha ao abrir página inicial: {e}")
         browser.close()
         return []
 
-    time.sleep(2)
+    # ---------- Atualizar CEP ----------
+    try:
+        print("[INFO] Atualizando CEP...")
+        page.click('#nav-global-location-popover-link', timeout=8000)
+        page.wait_for_selector('#GLUXZipUpdateInput_0', timeout=12000)
 
-    product_cards = page.query_selector_all('div.s-main-slot div[data-asin]:not([data-asin=""])')
+        cep = re.sub(r"\D", "", cepEntrega)
+        page.fill('#GLUXZipUpdateInput_0', cep[:5])
+        page.fill('#GLUXZipUpdateInput_1', cep[5:])
+        page.click('#GLUXZipUpdate')
+        page.wait_for_load_state("networkidle")
+        time.sleep(random.uniform(1, 2))
+        print("[OK] CEP atualizado!")
+    except Exception as e:
+        print(f"[AVISO] Não foi possível atualizar o CEP: {e}")
 
-    print(f"[INFO] Produtos encontrados: {len(product_cards)}")
+    # ---------- Loop de páginas ----------
+    while True:
+        print(f"\n==============================")
+        print(f"📄 COLETANDO PÁGINA {pagina_atual}")
+        print("==============================\n")
 
-    # ====================================================================
-    # LOOP PRINCIPAL DE LISTAGEM
-    # ====================================================================
-    for i, card in enumerate(product_cards, start=1):
+        fechar_popups(page)
 
-        name_el = (
-            card.query_selector('div[data-cy="title-recipe"] a') or
-            card.query_selector('h2.a-size-mini a.a-link-normal') or
-            card.query_selector('h2.a-size-base a.a-link-normal')
-        )
+        # Scroll lento para simular usuário
+        try:
+            page.evaluate("window.scrollBy(0, document.body.scrollHeight/3);")
+            time.sleep(random.uniform(0.5, 1.5))
+            page.evaluate("window.scrollBy(0, document.body.scrollHeight);")
+            time.sleep(random.uniform(0.5, 1.5))
+        except Exception:
+            pass
 
-        if not name_el:
-            print("[AVISO] Produto sem nome, ignorado.")
-            continue
+        # ---------- Coleta links de produtos ----------
+        try:
+            cards = page.query_selector_all('div.s-main-slot div[data-asin]:not([data-asin=""])')
+        except Exception as e:
+            print(f"[ERRO] Não foi possível coletar cards de produtos: {e}")
+            break
 
-        nome = name_el.inner_text().strip()
-        linkProduto = "https://www.amazon.com.br" + name_el.get_attribute('href')
+        links_produtos = []
+        for card in cards:
+            name_el = (
+                card.query_selector('div[data-cy="title-recipe"] a') or
+                card.query_selector('h2.a-size-mini a.a-link-normal') or
+                card.query_selector('h2.a-size-base a.a-link-normal')
+            )
+            if not name_el:
+                continue
+            href = name_el.get_attribute("href")
+            if href and "dp/" in href:
+                links_produtos.append("https://www.amazon.com.br" + href)
 
-        print(f"\n=========== PRODUTO {i} ===========")
-        print("Link:", linkProduto)
+        print(f"[OK] Links encontrados nesta página: {len(links_produtos)}")
 
-        # ====================================================================
-        # COLETA DOS DADOS INDIVIDUAIS
-        # ====================================================================
-        produto_info = pegar_dados_produto(browser, linkProduto, cepEntrega)
+        # ---------- Processa cada produto ----------
+        for i, linkProduto in enumerate(links_produtos, start=1):
+            print(f"\n📦 Produto {i} da página {pagina_atual}")
+            print(f"URL: {linkProduto}")
+            produto_info = pegar_dados_produto(context, linkProduto)
+            if produto_info:
+                produtos.append(produto_info)
+                print("[✔] Produto coletado!")
+            else:
+                print("[X] Produto ignorado.")
 
-        if produto_info:
-            produtos.append(produto_info)
-            print("[OK] Produto coletado com sucesso.\n")
-        else:
-            print("[ERRO] Produto ignorado.\n")
+            time.sleep(random.uniform(0.5, 1.5))
 
-    # ====================================================================
-    # SALVAMENTO FINAL
-    # ====================================================================
-    print(f"[INFO] Total coletado: {len(produtos)}")
+        # ---------- Próxima página ----------
+        try:
+            botao_proximo = page.query_selector("a.s-pagination-next:not(.s-pagination-disabled)")
+            if botao_proximo:
+                href = botao_proximo.get_attribute("href")
+                if href:
+                    print(f"[➡] Indo para próxima página via href: {href}")
+                    page.goto("https://www.amazon.com.br" + href)
+                else:
+                    print("[INFO] Clicando no botão de próxima página...")
+                    botao_proximo.scroll_into_view_if_needed()
+                    time.sleep(random.uniform(0.5, 1))
+                    botao_proximo.click()
+                page.wait_for_load_state("load")
+                time.sleep(random.uniform(1, 2))
+                pagina_atual += 1
+            else:
+                print("[✔] Não há mais páginas. Finalizando raspagem.\n")
+                break
+        except Exception as e:
+            print(f"[AVISO] Não foi possível avançar para próxima página: {e}")
+            break
 
+    # ---------- Salvamento final ----------
+    print(f"\n🎉 COLETA FINALIZADA! Total coletado: {len(produtos)} produtos.")
     with open("amazon_data.json", "w", encoding="utf-8") as f:
         json.dump(produtos, f, ensure_ascii=False, indent=4)
 
@@ -291,97 +167,68 @@ def raspar_dados(playwright, BASE_URL, cepEntrega):
 
 
 # ====================================================================
-# FUNÇÃO QUE RASPA CADA PRODUTO INDIVIDUAL
+# FUNÇÃO: RASPA UM PRODUTO INDIVIDUAL
 # ====================================================================
-def pegar_dados_produto(browser, linkProduto, cepEntrega, tentativas=3):
-
+def pegar_dados_produto(context, linkProduto, tentativas=3):
     for tentativa in range(1, tentativas + 1):
+        print(f"[INFO] Acessando produto (tentativa {tentativa})")
         try:
-            print(f"[INFO] Acessando produto (tentativa {tentativa})")
-
-            context = browser.new_context(
-                user_agent=random.choice(USER_AGENTS),
-                viewport={"width": 1280, "height": 800},
-                locale="pt-BR"
-            )
-
             page = context.new_page()
             page.goto(linkProduto, timeout=90000)
+            page.wait_for_load_state("domcontentloaded")
+            time.sleep(random.uniform(1, 2))
 
-            # Wait for title
-            page.wait_for_selector("h1#title span#productTitle", timeout=60000)
+            fechar_popups(page)
 
-            # ============================
-            # TÍTULO
-            # ============================
-            nome = page.query_selector("h1#title span#productTitle").inner_text().strip()
+            # Título
+            try:
+                nome = page.query_selector("h1#title span#productTitle").inner_text().strip()
+            except:
+                nome = "Produto sem título"
 
-            # ============================
-            # CÓDIGO ASIN
-            # ============================
+            # Código ASIN
             match = re.search(r"/dp/([A-Z0-9]+)/", linkProduto)
             codigoProduto = match.group(1) if match else None
 
-            # ============================
-            # PREÇO
-            # ============================
-            price_el = page.query_selector("span.a-price span.a-offscreen")
-            price = price_el.inner_text().strip() if price_el else None
+            # Preço
+            try:
+                price_el = page.query_selector("span.a-price span.a-offscreen")
+                price = price_el.inner_text().strip() if price_el else None
+            except:
+                price = None
 
-            # ============================
-            # IMAGEM DO PRODUTO
-            # ============================
-            img_el = page.query_selector("#landingImage")
-            imagem = img_el.get_attribute("src") if img_el else None
+            # Imagem
+            try:
+                img_el = page.query_selector("#landingImage")
+                imagem = img_el.get_attribute("src") if img_el else None
+            except:
+                imagem = None
 
-            # ============================
-            # ESPECIFICAÇÕES
-            # ============================
-            rows = page.query_selector_all("table.a-normal tbody tr")
-
-            for row in rows:
-                try:
+            # Especificações
+            try:
+                rows = page.query_selector_all("table.a-normal tbody tr")
+                for row in rows:
                     label = row.query_selector("td.a-span3 span.a-text-bold")
                     value = row.query_selector("td.a-span9 span.po-break-word")
-
                     if label and value:
                         nome += f"|{label.inner_text().strip()}:{value.inner_text().strip()}"
-                except:
-                    pass
+            except:
+                pass
 
-            # ============================
-            # ATUALIZAÇÃO DO CEP
-            # ============================
-            frete = None
-            prazo = None
-
+            # Frete e prazo (usando bloco fornecido)
             try:
-                time.sleep(1)
-                page.click('#nav-global-location-popover-link', timeout=8000)
-
-                page.wait_for_selector('#GLUXZipUpdateInput_0', timeout=12000)
-
-                cep = re.sub(r"\D", "", cepEntrega)
-                page.fill('#GLUXZipUpdateInput_0', cep[:5])
-                page.fill('#GLUXZipUpdateInput_1', cep[5:])
-
-                page.click('#GLUXZipUpdate')
-                page.wait_for_load_state("networkidle")
-
-                span_el = page.query_selector("span[data-csa-c-delivery-price]")
-
-                if span_el:
-                    frete = span_el.get_attribute("data-csa-c-delivery-price")
-                    prazo = span_el.get_attribute("data-csa-c-delivery-time")
-
-            except Exception as e:
-                print("[AVISO] Não foi possível atualizar o CEP:", e)
-
+                delivery_block = page.query_selector(
+                    "#mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE span[data-csa-c-type='element']"
+                )
+                if delivery_block:
+                    frete = delivery_block.get_attribute("data-csa-c-delivery-price")
+                    prazo = delivery_block.get_attribute("data-csa-c-delivery-time")
+                else:
+                    frete, prazo = None, None
+            except:
+                frete, prazo = None, None
+            print(f"\n Nome:{nome}\n Codigo:{codigoProduto}\nPreço:{price}\nFrete:{frete}\nPrazo:{prazo}\n\n -------------------------------\n")
             page.close()
-
-            # ============================
-            # MONTA OBJETO FINAL
-            # ============================
             return {
                 "codigoProduto": codigoProduto,
                 "nome": nome,
@@ -394,8 +241,89 @@ def pegar_dados_produto(browser, linkProduto, cepEntrega, tentativas=3):
 
         except Exception as e:
             print(f"[ERRO] Tentativa {tentativa} falhou: {e}")
-            time.sleep(2)
+            time.sleep(random.uniform(1, 2))
+            continue
 
-    print("[ERRO] Todas as tentativas falharam:", linkProduto)
+    print(f"[ERRO] Todas as tentativas falharam para: {linkProduto}")
     return None
 
+
+
+"""import json
+import time
+import random
+
+# Mantemos o mesmo nome para compatibilidade
+def fechar_popups(page):
+    # Não faz nada na versão mock
+    return
+
+
+def raspar_dados(playwright, BASE_URL, cepEntrega):
+    print("\n============================")
+    print("🚀 MODO TESTE / MOCK")
+    print("============================\n")
+
+    print("[INFO] Acessando página inicial (fake)...")
+    time.sleep(0.2)
+
+    produtos = []
+    pagina_atual = 1
+
+    # Simulando 3 páginas com 5 produtos cada
+    for pagina in range(1, 4):
+        print(f"\n==============================")
+        print(f"📄 COLETANDO PÁGINA {pagina} (FAKE)")
+        print("==============================\n")
+
+        # Simula links de produtos
+        links = [
+            f"https://www.amazon.com.br/dp/FAKEASIN{pagina}{i}"
+            for i in range(1, 6)
+        ]
+        print(f"[OK] Links encontrados nesta página: {len(links)}")
+
+        for link in links:
+            print(f"\n📦 Produto FAKE - {link}")
+            produto = pegar_dados_produto(None, link)
+            produtos.append(produto)
+            print("[✔] Produto simulado coletado!")
+            time.sleep(0.1)
+
+    # Salvamento fake
+    print(f"\n🎉 COLETA MOCKADA FINALIZADA! Total coletado: {len(produtos)} produtos.")
+    with open("amazon_data_mock.json", "w", encoding="utf-8") as f:
+        json.dump(produtos, f, ensure_ascii=False, indent=4)
+
+    return produtos
+
+
+def pegar_dados_produto(context, linkProduto, tentativas=3):
+    print(f"[INFO] Acessando produto (mock)...")
+
+    # Gerando valores fictícios mas realistas
+    codigo = linkProduto.split("/")[-1].replace("dp/", "")
+    preco = f"R$ {random.randint(50, 500)}"
+    nome = f"Produto Fictício {codigo}"
+    imagem = "https://fakeimg.pl/300x300/?text=Produto+Fake"
+    frete = random.choice(["Grátis", "R$ 12,90", "R$ 19,90"])
+    prazo = random.choice(["2 dias úteis", "Até 7 dias", "Entrega amanhã"])
+
+    print(f"""'''
+ Nome: {nome}
+ Código: {codigo}
+ Preço: {preco}
+ Frete: {frete}
+ Prazo: {prazo}
+ -------------------------------
+   ''' """)
+
+    return {
+        "codigoProduto": codigo,
+        "nome": nome,
+        "preco": preco,
+        "imagem": imagem,
+        "url": linkProduto,
+        "frete": frete,
+        "prazo": prazo
+    }"""

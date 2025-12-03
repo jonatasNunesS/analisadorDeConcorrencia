@@ -20,109 +20,115 @@ from siteweb.models import Loja, Produto
 def executar_raspagem(urlLoja, cepEntrega):
     print("// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //")
     print("INICIO RASPAGEM")
+
+    # 1. Verifica se a loja já existe no DB
     nloja = Loja.objects.filter(url=urlLoja).first()
     if nloja:
         nomeLoja = nloja.nome
         print(f"Loja encontrada no DB: {nomeLoja}")
     else:
+        # Se não existe, tenta descobrir via Playwright
         with sync_playwright() as playwright:
-                browser = playwright.chromium.launch(headless=False)
-                USER_AGENTS = [
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/537.36",
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/116 Safari/537.36"
-                ]
+            browser = playwright.chromium.launch(headless=False)
+            USER_AGENTS = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/537.36",
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/116 Safari/537.36"
+            ]
+            context = browser.new_context(
+                user_agent=random.choice(USER_AGENTS),
                 viewport={"width": 1280, "height": 800}
-                context = browser.new_context(
-                    user_agent=random.choice(USER_AGENTS),
-                    viewport={"width":1280,"height":800}
-                )
-                page = context.new_page()
-                print("[INFO] Acessando página...")
-                page.goto(urlLoja, timeout=50000)
-                time.sleep(2)
-                page.mouse.wheel(0, 1000)
-                time.sleep(1)
-                if "algo deu errado" in page.content():
-                    print("[ERRO] Página de erro detectada. Abortando raspagem.")
-                    browser.close()
-                    return []
+            )
+            page = context.new_page()
+            print("[INFO] Acessando página...")
+            page.goto(urlLoja, timeout=50000)
+            time.sleep(2)
+            page.mouse.wheel(0, 1000)
+            time.sleep(1)
 
-                selected_text = page.evaluate("""
-                    () => {
-                        const selectElement = document.querySelector('select');
-                        return selectElement.options[selectElement.selectedIndex].text;
-                    }
-                """)
-                print(f"[INFO] Loja selecionada: {selected_text}")
+            if "algo deu errado" in page.content():
+                print("[ERRO] Página de erro detectada. Abortando raspagem.")
                 browser.close()
-                nomeLoja = selected_text.strip()
-                print(f"Nome da loja obtido: {nomeLoja}")
+                return [], None, None
+
+            selected_text = page.evaluate("""
+                () => {
+                    const selectElement = document.querySelector('select');
+                    return selectElement ? selectElement.options[selectElement.selectedIndex].text : "Loja Desconhecida";
+                }
+            """)
+            browser.close()
+            nomeLoja = selected_text.strip()
+            print(f"Nome da loja obtido: {nomeLoja}")
+
+    # 2. Cache
     chave_cache = f"loja:{nomeLoja}"
     produtos_json = ler_cache(chave_cache)
     produtos = json.loads(produtos_json) if produtos_json else []
-    produtos = list(produtos)
+
     if not produtos:
         print("Produtos não encontrados no cache")
         loja = Loja.objects.filter(url=urlLoja).first()
-        if loja:
-            print("Loja encontrada.")
-            produtos = Produto.objects.filter(loja_id = loja.id).all()
 
-            if not produtos.exists():
+        if loja:
+            print("Loja encontrada no DB.")
+            produtos_db = Produto.objects.filter(loja_id=loja.id).all()
+
+            if not produtos_db.exists():
                 print("[INFO] Produtos não encontrados no DB, iniciando raspagem.")
                 with sync_playwright() as playwright:
                     produtos = raspar_dados(playwright, urlLoja, cepEntrega)
-                    produto_list = [
-                        {
-                        "codigoProduto":p["codigoProduto"] if isinstance(p, dict) else p.codigoProduto,
-                        "nome": p["nome"] if isinstance(p, dict) else p.nome,
-                            "preco": (
-                        float(
-                            (p["preco"] if isinstance(p, dict) else p.preco)
-                            .replace("R$", "")
-                            .replace("\xa0", "")
-                            .replace(".", "")
-                            .replace(",", ".")
-                            .strip()
-                        )
-                        if (p["preco"] if isinstance(p, dict) else p.preco)
-                        else None
-                    ),
-                        "imagem": p.get("imagem") if isinstance(p, dict) else (p.imagem if p.imagem else None),
-                        "loja": p.get("loja") if isinstance(p, dict) else p.loja_id,
-                        "url": p.url if p.url else "teste"
-                        }
-                        for p in produtos
-                    ]   
-                    print("Salvando produtos no cache ", produto_list)
-                    salvar_cache(chave_cache, json.dumps(produto_list))
-                
-            else:
-                print("Produtos encontrados no DB: " , len(produtos))
+
+                # Normaliza lista de produtos (dicts)
                 produto_list = [
                     {
-                        "codigoProduto":p["codigoProduto"] if isinstance(p, dict) else p.codigoProduto,
+                        "codigoProduto": p["codigoProduto"] if isinstance(p, dict) else p.codigoProduto,
                         "nome": p["nome"] if isinstance(p, dict) else p.nome,
-                        "preco": float(p.preco),
-                        "imagem": p.imagem if p.imagem else None,
-                        "loja": p.loja_id,
-                        "url": p.url if p.url else "teste"
+                        "preco": (
+                            float(
+                                (p["preco"] if isinstance(p, dict) else p.preco)
+                                .replace("R$", "")
+                                .replace("\xa0", "")
+                                .replace(".", "")
+                                .replace(",", ".")
+                                .strip()
+                            )
+                            if (p["preco"] if isinstance(p, dict) else p.preco)
+                            else None
+                        ),
+                        "imagem": p["imagem"] if isinstance(p, dict) else (p.imagem if p.imagem else None),
+                        "loja": p.get("loja") if isinstance(p, dict) else p.loja_id,
+                        "url": p["url"] if isinstance(p, dict) else (p.url if p.url else "teste"),
                     }
                     for p in produtos
                 ]
                 salvar_cache(chave_cache, json.dumps(produto_list))
+                produtos = produto_list
+            else:
+                print("Produtos encontrados no DB: ", len(produtos_db))
+                produto_list = [
+                    {
+                        "codigoProduto": p.codigoProduto,
+                        "nome": p.nome,
+                        "preco": float(p.preco),
+                        "imagem": p.imagem if p.imagem else None,
+                        "loja": p.loja_id,
+                        "url": p.url if p.url else "teste",
+                    }
+                    for p in produtos_db
+                ]
+                salvar_cache(chave_cache, json.dumps(produto_list))
+                produtos = produto_list
         else:
-            produtos = None
-            print("Loja não encontrada")
+            print("Loja não encontrada, raspando direto...")
             with sync_playwright() as playwright:
                 produtos = raspar_dados(playwright, urlLoja, cepEntrega)
-            
     else:
         print("Produtos encontrados no cache.")
+
     print("// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //")
     return produtos, nomeLoja, chave_cache
-
+    
 def separarLoja(nome):
     partes = nome.split("|",1)
     if(len(partes) == 2): 
@@ -229,7 +235,7 @@ def rankeador(resultados_sim):
                 "preco": limpar_preco(principal.get("preco")),
                 "tipo": "principal",
                 "loja": principal.get("loja"),
-                "link": principal.get("link", "#"),
+                "link": principal.get("url", "#"),
                 "frete": principal.get("frete"),
                 "prazo": principal.get("prazo")
             })
@@ -243,7 +249,7 @@ def rankeador(resultados_sim):
                 "preco": limpar_preco(str((c.get("preco") or 0))) + limpar_preco(str(frete_c)),
                 "tipo": "concorrente",
                 "loja": c.get("loja"),
-                "link": c.get("link", "#"),
+                "link": c.get("url", "#"),
                 "frete": principal.get("frete") if principal.get("frete")else print("O rankeador não recebeu Frete"),
                 "prazo": principal.get("prazo")
             })

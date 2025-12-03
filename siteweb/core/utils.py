@@ -23,51 +23,75 @@ def limpar_preco(valor_str):
         raise ValueError(f"Preço inválido: {valor_str}")
 
 def salvar_loja(request):
-    if request.method == 'POST':
-        try:
-            dados = json.loads(request.body)
-            nome = dados.get('nome')
-            url = dados.get('url')
-            produtosLoja = dados.get('produtosLoja')
-            lojas = Loja.objects.filter(url=url)
-            loja = lojas.first()
-            quantProduto = Produto.objects.filter(loja_id=loja.id).count() if loja else 0
-            if loja is None:
-                nova_loja = Loja(nome=nome, url=url)
-                nova_loja.save() 
-                print(f"Loja recebida: {nome} - {url}")
-                produtos = Produto.objects.filter(loja_id = nova_loja.id).all()
-                if not produtos.exists():
-                    for produto in produtosLoja:
-                        codigo_prod = produto.get('codigoProduto')
-                        nome_prod = produto.get('nome')
-                        print(nome_prod)
-                        precoBruto = produto.get('preco')
-                        preco_prod = limpar_preco(precoBruto)
-                        imagem_prod = produto.get('imagem') 
-                        url_prod = produto.get('url')
-                        if not Produto.objects.filter(nome=nome_prod, loja_id=nova_loja.id).exists():
-                            Produto.objects.create(
-                                codigoProduto = codigo_prod,
-                                nome=nome_prod,
-                                preco=preco_prod,   
-                                imagem=imagem_prod,
-                                loja_id=nova_loja.id,
-                                url=url_prod
-                            )
-                            print(f"{nome_prod} - {preco_prod} - {imagem_prod}\n")
-                    print(f"\nProdutos Recebidos:\n")
-                    return JsonResponse({'mensagem': 'Loja salva no DB com sucesso!'})
-                else:
-                    return JsonResponse({'mensagem': 'Essa loja ja tem produtos!'})          
-            else:
-                print("Loja ja existente.")
-                return JsonResponse({'mensagem': 'Loja já existente.'})
-        except Exception as e:
-            return JsonResponse({'mensagem': f'Erro ao salvar loja: {str(e)}'}, status=400)
-    else:
+    if request.method != 'POST':
         return JsonResponse({'mensagem': 'Método não permitido'}, status=405)
-    
+
+    try:
+        dados = json.loads(request.body)
+        nome = dados.get('nome')
+        url = dados.get('url')
+        produtosLoja = dados.get('produtosLoja')
+
+        if not nome or not url or not produtosLoja:
+            return JsonResponse({'mensagem': 'Dados incompletos.'}, status=400)
+
+        # Verifica se a loja já existe
+        loja = Loja.objects.filter(url=url).first()
+        if loja:
+            print("Loja já existente.")
+            return JsonResponse({'mensagem': 'Loja já existente.'})
+
+        # Criar nova loja
+        nova_loja = Loja(nome=nome, url=url)
+        nova_loja.save()
+        print(f"\nLoja recebida: {nome} - {url}")
+
+        # Verifica se já existe produto vinculado (raro nesse momento)
+        produtos_existentes = Produto.objects.filter(loja_id=nova_loja.id).exists()
+
+        if produtos_existentes:
+            return JsonResponse({'mensagem': 'Essa loja já tem produtos!'})
+
+        print("\nIniciando salvamento dos produtos...")
+
+        for produto in produtosLoja:
+            codigo_prod = produto.get('codigoProduto')
+            nome_prod = produto.get('nome')
+            precoBruto = produto.get('preco')
+            preco_prod = limpar_preco(precoBruto)
+            imagem_prod = produto.get('imagem')
+            url_prod = produto.get('url')
+            frete_prod = produto.get('frete')
+            prazo_prod = produto.get('prazo')
+            if not nome_prod:
+                print("Produto ignorado (nome ausente).")
+                continue
+
+            # Evita duplicados
+            if Produto.objects.filter(nome=nome_prod, loja_id=nova_loja.id).exists():
+                print(f"Produto já existente e ignorado: {nome_prod}")
+                continue
+
+            # Criação
+            Produto.objects.create(
+                codigoProduto=codigo_prod,
+                nome=nome_prod,
+                preco=preco_prod if preco_prod else 0.0,
+                imagem=imagem_prod,
+                loja_id=nova_loja.id,
+                url=url_prod,
+                frete=frete_prod,
+                prazo=prazo_prod
+            )
+
+            print(f"[OK] {nome_prod} - {preco_prod}")
+
+        print("\nProdutos Recebidos e salvos com sucesso.")
+        return JsonResponse({'mensagem': 'Loja salva no DB com sucesso!'})
+
+    except Exception as e:
+        print("\n[ERRO AO SALVAR LOJA]:", e)
+        return JsonResponse({'mensagem': f'Erro ao salvar loja: {str(e)}'}, status=400)
 
 
 def ler_todas_lojas():
