@@ -11,7 +11,7 @@ class Loja(models.Model):
 class Produto(models.Model):
     codigoProduto = models.CharField(max_length=400, default=0)
     nome = models.CharField(max_length=800)
-    preco = models.DecimalField(max_digits=10, decimal_places=2)
+    preco = models.CharField(max_length=20)
     imagem = models.TextField(null=True, blank=True)
     loja = models.ForeignKey(Loja, on_delete=models.CASCADE)
     url =models.CharField(max_length=600, null=True, blank=True)

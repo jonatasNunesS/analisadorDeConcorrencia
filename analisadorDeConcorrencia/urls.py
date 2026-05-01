@@ -12,6 +12,7 @@ urlpatterns = [
     path('login/', views.login, name='login'),
     path('', views.lojas_salvas, name='home'),
     path('verifier', views.verificar_usuario, name='verificar_usuario'),
+    path("proxy-webhook/", views.proxy_webhook, name="proxy_webhook"),
     path('Loja/', views.raspar_loja, name='raspar_loja'),
     path('Loja/salvar/', utils.salvar_loja, name='salvar_loja'),
     path('Loja/recarga/', utils.recarregar_prod, name='recarregar_prod'),

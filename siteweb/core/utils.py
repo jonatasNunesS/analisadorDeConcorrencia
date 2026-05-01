@@ -5,22 +5,42 @@ from siteweb.models import Loja, Produto
 import json
 import redis
 from tkinter import ttk
-
+import re
 r=redis.Redis(host='localhost', port=6379, db=0)
 
 from decimal import Decimal, InvalidOperation
 
-def limpar_preco(valor_str):
-    if not valor_str:
-        return Decimal("0.00")
-    # Remove símbolo de moeda, espaços invisíveis e separador de milhar
-    valor_str = valor_str.replace("R$", "").replace("\xa0", "").replace(".", "").strip()
-    # Substitui vírgula por ponto
-    valor_str = valor_str.replace(",", ".")
-    try:
-        return Decimal(valor_str)
-    except InvalidOperation:
-        raise ValueError(f"Preço inválido: {valor_str}")
+def limpar_preco(valor):
+    if valor is None:
+        return "0.00"
+
+    # Se já for Decimal, float ou int → converte para string
+    if isinstance(valor, (Decimal, float, int)):
+        return f"{float(valor)}"
+    if isinstance(valor, str):
+        valor = valor.strip()
+        if not valor or valor.upper() == "GRÁTIS":
+            return "0.00"
+
+        # Caso americano: "10.99"
+        if re.match(r"^\d+\.\d{2}$", valor):
+            return f"{float(valor)}"
+
+        # Caso brasileiro: "1.234,56"
+        valor = re.sub(r"[^\d,\.]", "", valor)
+        if "," in valor and "." in valor:
+            # remove pontos de milhar e troca vírgula por ponto
+            valor = valor.replace(".", "").replace(",", ".")
+        elif "," in valor:
+            valor = valor.replace(",", ".")
+        try:
+            return f"{float(valor)}"
+        except:
+            return "0.00"
+
+    return "0.00"
+
+
 
 def salvar_loja(request):
     if request.method != 'POST':
@@ -130,7 +150,6 @@ def recarregar_prod(request):
             return JsonResponse({'mensagem': f'Erro ao apagar dados antigos: {str(e)}'}, status=400)
     else:
         return JsonResponse({'mensagem': 'Método não permitido'}, status=405)
-
 
 def abrirPaginaResultados(resultados_sim):
     print(resultados_sim)

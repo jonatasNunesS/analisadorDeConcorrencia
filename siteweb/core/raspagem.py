@@ -1,4 +1,5 @@
 #raspagem.py
+
 import json
 from playwright.sync_api import sync_playwright, TimeoutError
 import random
@@ -249,7 +250,8 @@ def pegar_dados_produto(context, linkProduto, tentativas=3):
 
 
 
-"""import json
+"""
+import json
 import time
 import random
 
@@ -316,7 +318,7 @@ def pegar_dados_produto(context, linkProduto, tentativas=3):
  Frete: {frete}
  Prazo: {prazo}
  -------------------------------
-   ''' """)
+  ''' """)
 
     return {
         "codigoProduto": codigo,
@@ -326,4 +328,5 @@ def pegar_dados_produto(context, linkProduto, tentativas=3):
         "url": linkProduto,
         "frete": frete,
         "prazo": prazo
-    }"""
+    }
+    """

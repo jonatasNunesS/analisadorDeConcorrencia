@@ -130,11 +130,13 @@ import pandas as pd
 import os
 from datetime import datetime
 from playwright.sync_api import sync_playwright, TimeoutError
+from siteweb.core.utils import limpar_preco
 import random
 import time
 from django.conf import settings
-from siteweb.core.servicos import separarLoja
+
 import re
+
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117 Safari/537.36",
@@ -144,24 +146,16 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
 ]
 
-def normalizar_preco(preco_str):
-    if not preco_str:
-        return None
-    preco_str = preco_str.replace("R$", "").replace(".", "").replace(",", ".").strip()
-    try:
-        return float(preco_str)
-    except:
-        return preco_str
-
 # Função para buscar concorrentes na Amazon
 def buscar_concorrentes(produto_nome, max_pages, cep):
-    partesName  = separarLoja(produto_nome)
+    # força limite de 5 páginas
+    max_pages = min(max_pages, 5)
     print("\n==============================")
-    print(f"🔎 Buscando concorrentes para: {partesName[1]}")
-    print(f"🏬 Loja principal: {partesName[0]}")
+    print(f"🔎 Buscando concorrentes para: {produto_nome}")
+    print(f"🏬 Loja principal: {produto_nome}")
     print("==============================\n")
-
-    url_base = f"https://www.amazon.com.br/s?k={partesName[1].replace(' ', '+')}"
+    contador = 0
+    url_base = f"https://www.amazon.com.br/s?k={produto_nome.replace(' ', '+')}"
     concorrentes = []
     
     with sync_playwright() as p:
@@ -218,7 +212,29 @@ def buscar_concorrentes(produto_nome, max_pages, cep):
 
                 preco_el = card.query_selector("span.a-price span.a-offscreen")
                 preco = preco_el.inner_text().strip() if preco_el else None
-                preco = normalizar_preco(preco)
+                preco = limpar_preco(preco)
+                try:
+                    # pega o span que contém "Mais de X mil compras"
+                    proof_el = page.query_selector("div[data-cy='reviews-block'] span.a-size-base.a-color-secondary")
+                    quantidadeCompras = None
+                    if proof_el:
+                        texto = proof_el.inner_text().strip()
+                        texto = texto.replace("\xa0", " ")  # normaliza espaço não quebrável
+                        print("[DEBUG] Texto capturado:", texto)
+
+                        # caso especial: "mil"
+                        if "mil" in texto.lower():
+                            match = re.search(r"(\d+)", texto)
+                            if match:
+                                quantidadeCompras = int(match.group()) * 1000
+                        else:
+                            match = re.search(r"(\d+)", texto)
+                            quantidadeCompras = int(match.group()) if match else None
+
+                except Exception as e:
+                    print("[ERRO] Não foi possível capturar quantidade de compras:", e)
+                    quantidadeCompras = None
+
 
                 produto_page = None
                 try:
@@ -244,6 +260,7 @@ def buscar_concorrentes(produto_nome, max_pages, cep):
                     img_el = produto_page.query_selector("#imgTagWrapperId #landingImage")
                     imagem = img_el.get_attribute("src") if img_el else None
 
+                    
                     # Especificações
                     rows = produto_page.query_selector_all("table.a-normal tbody tr")
                     for row in rows:
@@ -276,9 +293,7 @@ def buscar_concorrentes(produto_nome, max_pages, cep):
                     except Exception as e:
                         print(f"[AVISO] Erro ao capturar frete/prazo: {e}")
                         frete, prazo = None, None
-
-                    nome = f"{nomeLoja}|{nome}" if nomeLoja else nome
-
+                    
                     concorrentes.append({
                         "codigoProduto": codigoProduto,
                         "nome": nome,
@@ -288,8 +303,12 @@ def buscar_concorrentes(produto_nome, max_pages, cep):
                         "frete": frete,
                         "prazo": prazo,
                         "nomeLoja": nomeLoja,
+                        "quantidadeCompras": quantidadeCompras,
                     })
-                    print(f"✅ Concorrente coletado: {nome}")
+                    print(f"✅ Concorrente coletado: {nome} |QUantia:De Compras: {quantidadeCompras}")
+                    contador+=1
+                    if contador > 5:
+                        break
                 except Exception as e:
                     print(f"[ERRO] Falha ao acessar produto: {e}")
                 finally:
@@ -305,12 +324,14 @@ def buscar_concorrentes(produto_nome, max_pages, cep):
 # Função principal
 def raspagem_concorrentes(produtos, numPage, cep):
     raspagem = []  
-    num_paginas = int(numPage)
+    # força limite de 5 páginas
+    num_paginas = min(int(numPage), 5)
+    print(f"\n\n\n Recebido por raspagem concorrentes:\n {produtos}\n\n\n")
     for produto in produtos:
         print("\n==============================")
         print(f"📌 Iniciando coleta para produto principal: {produto['nome']}")
         print("==============================\n")
-
+        
         concorrentes = buscar_concorrentes(produto["nome"], num_paginas, cep)
         print(f"\n🎉 COLETA FINALIZADA! Total coletado: {len(concorrentes)} concorrentes.")
         print(f"📊 Produto principal: {produto['nome']}")
@@ -318,9 +339,12 @@ def raspagem_concorrentes(produtos, numPage, cep):
         bloco = {
             "principal": {
                 "nome": produto["nome"],
-                "preco": produto["preco"],
+                "preco": limpar_preco(produto["preco"]),
                 "imagem": produto.get("imagem", "..."),
-                "url": produto.get("url", "...")
+                "url": produto["url"],
+                "codigoProduto":produto["codigoProduto"],
+                "frete": produto["frete"],
+                "prazo": produto["prazo"],
             },
             "concorrentes": concorrentes
         }

@@ -6,10 +6,14 @@ from siteweb.core.utils import ler_todas_lojas
 #from utils.cache import salvar_cache, ler_cache
 from siteweb.core.servicos import executar_raspagem
 from siteweb.core.servicos import rankeador
+
 import json
 from django.conf import settings
+import requests
+from django.views.decorators.csrf import csrf_exempt
 from siteweb.models import Usuario
 from django.http import JsonResponse
+
 
 def usuario_autenticado(request):
     if 'usuario_id' in request.session:
@@ -95,3 +99,33 @@ def lojas_salvas(request):
         return render(request, "siteweb/index.html", {"lojas":lojas})
     else:
         return login(request)
+def n8n(linkLoja, cepEntrega):
+    print(f"\n Fluxo n8n iniciando...")
+    produto, nomeLoja, chave_cache = executar_raspagem(linkLoja, cepEntrega)
+    raspagem, arquivo = raspagem_concorrentes(produto, 2, cepEntrega)
+    resultados_sim = comparacaoIa(raspagem, 95)
+    rankeador(resultados_sim)
+@csrf_exempt
+def proxy_webhook(request):
+    if request.method == "POST":
+        linkLoja = request.POST.get("linkLoja")
+        cepEntrega = request.POST.get("cepEntrega")
+        payload = {
+            "linkLoja": request.POST.get("linkLoja"),
+            "cepEntrega": request.POST.get("cepEntrega")
+        }
+        try:
+            r = requests.post(
+                "http://localhost:5678/webhook/3bdc5920-1aa0-4090-a510-f5ea7063213d",
+                json=payload
+            )
+            n8n(linkLoja, cepEntrega)
+            # tenta converter para JSON, mas se não for, devolve texto
+            try:
+                return JsonResponse(r.json(), safe=False)
+            except ValueError:
+                return JsonResponse({"response": r.text}, safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método não permitido"}, status=405)

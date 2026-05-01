@@ -114,7 +114,7 @@
 
     <script>
         function compararProdutos(){ 
-           /* const checkedBoxes = Array.from(document.querySelectorAll('.checkCard'))
+           /*const checkedBoxes = Array.from(document.querySelectorAll('.checkCard'))
             .map(checkbox => ({
                 nome: checkbox.dataset.nomeproduto,
                 preco: checkbox.dataset.precoproduto
@@ -122,13 +122,17 @@
                     : null,
                 imagem: checkbox.dataset.imagemproduto,
             }));
-            console.log(checkedBoxes);*/
+            console.log(checkedBoxes); */
             const checkedBoxes = Array.from(document.querySelectorAll('.checkCard'))
             .filter(checkbox => checkbox.checked)
             .map(checkbox =>({
                 nome: checkbox.dataset.nomeproduto,
                 preco: checkbox.dataset.precoproduto.replace("R$", "").replace(/\s/g, "").replace(",", "."),
                 imagem: checkbox.dataset.imagemproduto,
+                url: checkbox.dataset.urlloja,
+                codigoProduto: checkbox.dataset.codigoproduto,
+                frete: checkbox.dataset.freteproduto,
+                prazo: checkbox.dataset.prazoproduto
             }));
             console.log(checkedBoxes)
 
