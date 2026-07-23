@@ -7,26 +7,48 @@
     gap: 20px;
     border: 2px solid black;
     border-radius: 5px;
+    width: 100%;
 }
 .dadosVendedor{
     display: flex;
     align-items: center;
+    flex-direction: column;
     justify-content: center;
     gap: 20px;
     padding: 20px 10px;
+    min-width: 90%;
 }
+
 .dadosVendedor fieldset{
     border: none;
+    width:100%;
 }
 .dadosVendedor label{
+     display: none;
     font: normal 600 1.3em var(--fontPrimaria);
     font-variant: small-caps;
 }
 .dadosVendedor input{
     font: normal 500 1em var(--fontPrimaria);
-    color: rgba(0, 0, 0, 0.614);
+    color: rgba(0, 0, 0, 0.5);
+    border: 1px solid #cbcbcb;
+    box-shadow: 1px 2px 5px #cbcbcbcb;
+    border-radius: 5px;
     padding: 5px 10px;
+    width: 100%;
 }
+.plataformaControl{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: normal 500 1em var(--fontPrimaria);
+    color: rgba(0, 0, 0, 0.692);
+    border: 1px solid #cbcbcb;
+    box-shadow: 1px 2px 5px #cbcbcbcb;
+    padding: 5px 10px;
+    gap: 20px;
+    width: 100%;
+}   
 
 /*Lojas salvas*/
 .lojasSalvas{
@@ -39,35 +61,46 @@ font: normal 600 1.2em var(--fontPrimaria);
 }
 .contaiLojasSalvas{
     display: flex;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
     gap: 20px;
-    padding-top: 25px;
+    padding-top: 12px;
+    width: 100%;
 }
 
-
+.containCardLoja{
+display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
 /*Card produto*/
 .cardLoja{
     display: flex;
     flex-direction: column;
-    width: 220px;
+    width: 85%;
     border: 1px solid #cbcbcb;
-    border-radius: 20px;
-    padding: 20px 8px;
+    box-shadow: 1px 2px 5px #cbcbcbcb;
+    border-radius: 5px;
+    padding: 10px 10px;
     cursor: pointer;
+    gap: 5px;
     transition: 0.2s;
 }
 .cardLoja:hover{
   transform: translateY(-2px);
 }
 .cardLoja .titleLoja{
-    font: normal 600 0.8em var(--fontPrimaria);
+    font: normal 600 1.2em var(--fontPrimaria);
     color: #000000cc;
-    padding: 2px 8px;
 }
 .urlLoja{
     display: block;
-    font: normal 500 0.6em var(--fontPrimaria);
+    font: normal 500 1em var(--fontPrimaria);
+    font-wrap: break-word;
     color: #00000072;
     overflow: hidden;
 }  

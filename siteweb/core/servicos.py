@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 from siteweb.models import Loja, Produto
 
-def executar_raspagem(urlLoja, cepEntrega):
+def executar_raspagem(urlLoja, cepEntrega, plataforma):
     print("// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //")
     print("INICIO RASPAGEM")
 

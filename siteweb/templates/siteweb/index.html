@@ -24,11 +24,21 @@
             {% csrf_token %}
             <fieldset>
                 <label for="urlLoja">link da loja</label>
-                <input type="text" name="urlLoja" id="urlLoja">
+                <input type="text" name="urlLoja" id="urlLoja" placeholder="Link da loja" required>
             </fieldset>
             <fieldset>
                 <label for="cepEntrega">Cep</label>
-                <input type="text" name="cepEntrega" id="cepEntrega">
+                <input type="text" name="cepEntrega" id="cepEntrega" placeholder="Cep de entrega" required>
+            </fieldset>
+            <fieldset>
+                <label for="plataforma">Plataforma</label>
+                <select name="plataforma" id="plataforma" class="plataformaControl" required>
+                    <option value="">Selecione a plataforma</option>
+                    <option value="magalu">Magazine Luiza</option>
+                    <option value="amazon">Amazon</option>
+                    <option value="shoppe">Shoppe</option>
+                    <option value="aliexpress">AliExpress</option>
+                </select>
             </fieldset>
             <input type="submit" value="Buscar">
         </form>
@@ -38,7 +48,7 @@
         <h2 class="titleLojasSalvas">Lojas salvas</h2>
         <div class="contaiLojasSalvas">
                 {% for loja in lojas %}
-                <form method="POST" action="{% url 'raspar_loja' %}" style="display: inline;">
+                <form method="POST" action="{% url 'raspar_loja' %}" class="containCardLoja" style="display: inline;">
                     {% csrf_token %}
                     <input type="hidden" name="nomeLoja" value="{{ loja.nome }}">
                     <input type="hidden" name="urlLoja" value="{{ loja.url }}">
